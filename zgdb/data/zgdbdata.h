@@ -1,0 +1,4 @@
+#ifndef ZGDBPROJECT_ZGDBDATA_H
+#define ZGDBPROJECT_ZGDBDATA_H
+
+#endif

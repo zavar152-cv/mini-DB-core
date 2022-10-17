@@ -1,11 +1,28 @@
 #include <stdio.h>
+#include <stdint.h>
 
-typedef struct Index {
+typedef struct __attribute__((packed)) Index {
     long long id;
     long offset;
 } Index;
 
+#include <time.h>
+
+#include "zgdb/index/zgdbindex.h"
+
 int main() {
+
+    time_t now = time(NULL);
+
+    if (now == -1) {
+
+        puts("The time() function failed");
+    }
+
+    printf("%04X\n", (uint32_t)now);
+    printf("%lu\n", sizeof(now));
+
+
     FILE *file;
     char shelf1[] = "kek";
     char shelf2[] = "hello";

@@ -40,7 +40,7 @@ typedef enum terminators {
  */
 typedef struct __attribute__((packed)) documentHeader {
     uint64_t size: 40;
-    uint64_t indexOrder: 40;
+    uint64_t indexOrder: 40;//TODO union
 } documentHeader;
 
 /*

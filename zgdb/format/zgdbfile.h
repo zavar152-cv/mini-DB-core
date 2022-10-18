@@ -7,17 +7,17 @@
 /*
  * Структура для заголовка файла, где храниться мета информация
  * zgdbType - 4 символа в UTF8 (ZGDB)
- * indexCount - количество всех индексов
+ * indexCount - количество всех индексов (5 байт)
  */
-typedef struct __attribute__((packed)) header {
+typedef struct __attribute__((packed)) zgdbHeader {
     uint32_t zgdbType;
-    uint64_t indexCount;
+    uint64_t indexCount: 40;
 } zgdbHeader;
 
 /*
  * Структура для представления zgdb файла
  */
-typedef struct file {
+typedef struct zgdbFile {
     FILE* file;
     zgdbHeader* zgdbHeader;
 } zgdbFile;
@@ -30,7 +30,7 @@ zgdbFile* loadOrCreateZgdbFile(const char* path);
 /*
  * Закрытие zgdb файла
  */
-int closeZgdbFile(zgdbFile* file);
+uint8_t closeZgdbFile(zgdbFile* file);
 
 /*
  * Сохранение информации в заголовке на диск

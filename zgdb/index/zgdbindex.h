@@ -1,6 +1,8 @@
 #ifndef ZGDBPROJECT_ZGDBINDEX_H
 #define ZGDBPROJECT_ZGDBINDEX_H
 
+#include <stdbool.h>
+
 #include "../format/zgdbfile.h"
 
 /*
@@ -10,22 +12,18 @@
  * INDEX_DEAD - индекс существует, привязан к блоку, который является "мёртвым" и может быть
  *              переиспользован, id равен 0, offset сохраняется без изменений
  */
-//typedef enum flags : uint8_t {
-//    INDEX_NEW = 0,
-//    INDEX_ALIVE = 1,
-//    INDEX_DEAD = 2
-//} index_flags;
-const uint8_t INDEX_NEW = 0;
-const uint8_t INDEX_ALIVE = 1;
-const uint8_t INDEX_DEAD = 2;
-
+typedef enum indexFlags {
+    INDEX_NEW = 0,
+    INDEX_ALIVE = 1,
+    INDEX_DEAD = 2
+} indexFlags;
 
 /*
  * Структура для ID привязанного к индексу блока
  * timestamp - время создания блока в UNIX timestamp (4 байта)
  * offset - смещение блока на момент создания (5 байт)
  */
-typedef struct __attribute__((packed)) id {
+typedef struct __attribute__((packed)) blockId {
     uint32_t timestamp;
     uint64_t offset: 40;
 } blockId;
@@ -36,7 +34,7 @@ typedef struct __attribute__((packed)) id {
  * offset - смещение привязанного блока от конца индексов в файле
  * id - идентификатор привязанного блока
  */
-typedef struct __attribute__((packed)) index {
+typedef struct __attribute__((packed)) zgdbIndex {
     uint8_t flag;
     uint64_t offset: 40;
     blockId id;
@@ -56,12 +54,33 @@ zgdbIndex* getIndexById(zgdbFile* file, blockId id);
 
 /*
  * Функция получения порядкового номера индекс по ID привязанного блока.
- * Возвращает ???NULL при неудаче
+ * Возвращает indexNumber из заголовка при неудаче
  */
 uint64_t getIndexOrderById(zgdbFile* file, blockId id);
 
-void killIndexByOrder(zgdbFile* file, uint64_t order);
+/*
+ * Функция, которая помечает индекс по его порядковому номеру как мёртвый.
+ * Установит в flag - INDEX_DEAD, в id - 0.
+ * Возвращает false в случае неудачи
+ */
+bool killIndexByOrder(zgdbFile* file, uint64_t order);
 
-void killIndexById(zgdbFile* file, blockId id);
+/*
+ * Функция, которая помечает индекс по id привязанного блока как мёртвый.
+ * Установит в flag - INDEX_DEAD, в id - 0.
+ * Возвращает false в случае неудачи
+ */
+bool killIndexById(zgdbFile* file, blockId id);
+
+/*
+ * Функция для создания связи вида индекс -> блок. Целевой индекс должен быть DEAD или NEW.
+ * Блок уже должен быть записан в файл.
+ */
+int8_t attachBlockToIndex(zgdbFile* file, uint64_t indexOrder, blockId id, uint64_t offset);
+
+/*
+ * Функция для обновления offset в блоке по его порядковому номеру
+ */
+bool updateOffset(zgdbFile* file, uint64_t indexOrder, uint64_t offset);
 
 #endif

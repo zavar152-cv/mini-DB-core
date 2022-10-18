@@ -8,8 +8,6 @@ typedef struct __attribute__((packed)) Index {
 
 #include <time.h>
 
-#include "zgdb/index/zgdbindex.h"
-
 int main() {
 
     time_t now = time(NULL);
@@ -21,7 +19,6 @@ int main() {
 
     printf("%04X\n", (uint32_t)now);
     printf("%lu\n", sizeof(now));
-
 
     FILE *file;
     char shelf1[] = "kek";

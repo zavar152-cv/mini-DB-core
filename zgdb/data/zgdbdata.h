@@ -113,16 +113,17 @@ typedef struct documentSchema {
     uint64_t size: 40;
     element* elements;
     size_t elementCount;
-} documentSchema;
+} documentSchema;//TODO move to zgdb.h
 
 /*
  * Функция для инициализации схемы
  */
-documentSchema initSchema(size_t elementCount);
+documentSchema initSchema(size_t elementCount);//TODO move to zgdb.h
 
 /*
  * Функции для расширения схемы
  */
+//TODO move to zgdb.h
 void addIntToSchema(documentSchema* schema, unsigned char* key, int32_t initValue);
 void addDoubleToSchema(documentSchema* schema, unsigned char* key, double initValue);
 void addBooleanToSchema(documentSchema* schema, unsigned char* key, uint8_t initValue);
@@ -133,12 +134,12 @@ void addDocumentToSchema(documentSchema* schema, unsigned char* key, document* i
  * Функция создания индекса в файле.
  * Возвращает indexNumber из заголовка при неудаче
  */
-uint64_t createIndex(zgdbFile* file);
+uint64_t createIndex(zgdbFile* file);//TODO move to .c
 
 /*
  * Функция для создания документа в файле из заданной схеме
  */
-void createDocument(zgdbFile* file, documentSchema* schema);
+void createDocument(zgdbFile* file, documentSchema* schema);//TODO move to zgdb.h
 
 
 

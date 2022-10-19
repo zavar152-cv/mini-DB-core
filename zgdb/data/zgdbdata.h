@@ -6,7 +6,7 @@
 #include "../format/zgdbfile.h"
 
 /*
- * Описание возможных типов данных в блоке
+ * Описание возможных типов данных в документе
  * TYPE_INT - int32
  * TYPE_DOUBLE - double
  * TYPE_BOOLEAN - uint8 (два значения)
@@ -22,7 +22,7 @@ typedef enum elementType {
 } elementType;
 
 /*
- * Описание символов-терминаторов в блоке
+ * Описание символов-терминаторов в документе
  * DOCUMENT_TERMINATOR - терминатор в конце документа
  * EMBEDDED_DOCUMENT_TERMINATOR - терминатор в конце вложенного документа
  * NULL_TERMINATOR - нуль терминатор для строк и ключей
@@ -34,13 +34,29 @@ typedef enum terminators {
 } terminators;
 
 /*
- * Структура для заголовка блока (документа)
- * size - размер блока в байтах (5 байт)
+ * Структура для ID документа
+ * timestamp - время создания документа в UNIX timestamp (4 байта)
+ * offset - смещение документа на момент создания
+ * Если блок вложенный, то его id = 0
+ */
+typedef struct __attribute__((packed)) documentId {
+    uint32_t timestamp;
+    uint64_t offset;
+} documentId;
+
+/*
+ * Структура для заголовка документа
+ * size - размер документа в байтах (5 байт)
  * indexOrder - порядковый номер привязанного индекса (5 байт)
+ * internalOffset - смещение документа относительно родительского (5 байт)
  */
 typedef struct __attribute__((packed)) documentHeader {
     uint64_t size: 40;
-    uint64_t indexOrder: 40;//TODO union
+    union {
+        uint64_t indexOrder: 40;
+        uint64_t internalOffset: 40;
+    };
+    documentId id;
 } documentHeader;
 
 /*
@@ -79,26 +95,30 @@ typedef struct element {
  * Структура для описания документа
  * header - заголовок документа
  * elements - указатель на массив элементов
+ * elementCount - количество элементов
  */
 typedef struct document {
     documentHeader header;
     element* elements;
+    size_t elementCount;
 } document;
 
 /*
- * Структура для заголовка блока (документа)
+ * Структура для схемы документа
  * size - размер блока в байтах (5 байт)
  * elements - указатель на массив элементов
+ * elementCount - количество элементов
  */
 typedef struct documentSchema {
     uint64_t size: 40;
     element* elements;
+    size_t elementCount;
 } documentSchema;
 
 /*
  * Функция для инициализации схемы
  */
-documentSchema initSchema(uint64_t numberOfElements);
+documentSchema initSchema(size_t elementCount);
 
 /*
  * Функции для расширения схемы

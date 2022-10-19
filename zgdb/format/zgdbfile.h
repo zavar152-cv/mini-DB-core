@@ -8,10 +8,12 @@
  * Структура для заголовка файла, где храниться мета информация
  * zgdbType - 4 символа в UTF8 (ZGDB)
  * indexCount - количество всех индексов (5 байт)
+ * freeListOffset - смещение на структуру с доступными индексами
  */
 typedef struct __attribute__((packed)) zgdbHeader {
     uint32_t zgdbType;
     uint64_t indexCount: 40;
+    uint64_t freeListOffset;
 } zgdbHeader;
 
 /*

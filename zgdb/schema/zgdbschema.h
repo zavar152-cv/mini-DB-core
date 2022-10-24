@@ -1,0 +1,8 @@
+//
+// Created by Ярослав on 25.10.2022.
+//
+
+#ifndef ZGDBPROJECT_ZGDBSCHEMA_H
+#define ZGDBPROJECT_ZGDBSCHEMA_H
+
+#endif //ZGDBPROJECT_ZGDBSCHEMA_H

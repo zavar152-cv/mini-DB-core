@@ -10,6 +10,7 @@ typedef struct __attribute__((packed)) node {
     uint64_t indexOrder: 40;
     uint64_t blockSize: 40;
     node* next;
+    node* prev;
 } node;
 
 typedef struct __attribute__((packed)) freeIndexesList {
@@ -26,5 +27,7 @@ void insertNewIndex(freeIndexesList* list, uint64_t indexOrder);
 void insertDeadIndex(freeIndexesList* list, uint64_t indexOrder, uint64_t blockSize);
 
 node* findRelevantIndex(freeIndexesList* list, uint64_t reqSize);
+
+void printList(freeIndexesList* list);
 
 #endif

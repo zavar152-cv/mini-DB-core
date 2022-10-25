@@ -19,6 +19,7 @@ node* createNewNode(uint64_t indexOrder, uint64_t blockSize) {
     return newNode;
 }
 
+//TODO optimization for middle
 void insertNode(freeIndexesList* list, node* newNode) {
     if (list->head == NULL) {
         list->head = newNode;
@@ -65,14 +66,37 @@ void insertDeadIndex(freeIndexesList* list, uint64_t indexOrder, uint64_t blockS
     list->indexesCount++;
 }
 
-node* findRelevantIndex(freeIndexesList* list, uint64_t reqSize) {
-    return NULL;
+//TODO idea about block capacity
+uint64_t* findRelevantIndex(freeIndexesList* list, uint64_t reqSize) {
+    if(list->tail == NULL || list->head == NULL)
+        return NULL;
+    if(list->tail->blockSize >= reqSize) {
+        node* pr = list->tail->prev;
+        list->tail->prev = NULL;
+        pr->next = NULL;
+        uint64_t* order = malloc(sizeof(uint64_t));
+        *order = list->tail->indexOrder;
+        free(list->tail);
+        list->tail = pr;
+        return order;
+    } else if(list->head->blockSize == 0){
+        node* pr = list->head->next;
+        list->head->next = NULL;
+        pr->prev = NULL;
+        uint64_t* order = malloc(sizeof(uint64_t));
+        *order = list->head->indexOrder;
+        free(list->head);
+        list->head = pr;
+        return order;
+    } else {
+        return NULL;
+    }
 }
 
 void printList(freeIndexesList* list) {
     node* temp = list->head;
     while (temp != NULL) {
-        printf("%lu ", temp->blockSize);
+        printf("%lu: %lu ", temp->indexOrder, temp->blockSize);
         temp = temp->next;
     }
 }

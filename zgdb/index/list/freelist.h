@@ -26,7 +26,7 @@ void insertNewIndex(freeIndexesList* list, uint64_t indexOrder);
 
 void insertDeadIndex(freeIndexesList* list, uint64_t indexOrder, uint64_t blockSize);
 
-node* findRelevantIndex(freeIndexesList* list, uint64_t reqSize);
+uint64_t* findRelevantIndex(freeIndexesList* list, uint64_t reqSize);
 
 void printList(freeIndexesList* list);
 

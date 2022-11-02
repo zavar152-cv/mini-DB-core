@@ -18,7 +18,16 @@ int main() {
     printf("%lu\n", pFile->zgdbHeader.freeListOffset);
     printf("%lu\n", pFile->zgdbHeader.indexCount);
 
-    zgdbIndex index = *getIndex(pFile, 0);
+    zgdbIndex index = getIndex(pFile, 0);
+    if(index.flag == INDEX_INVALID) {
+        printf("Invalid index");
+        return 0;
+    }
+    printf("%d\n", index.flag);
+    printf("%lu\n", index.offset);
+
+    attachIndexToBlock(pFile, 4, 824);
+    index = getIndex(pFile, 4);
     printf("%d\n", index.flag);
     printf("%lu\n", index.offset);
 

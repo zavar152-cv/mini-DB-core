@@ -15,7 +15,8 @@
 typedef enum indexFlags {
     INDEX_NEW = 0,
     INDEX_ALIVE = 1,
-    INDEX_DEAD = 2
+    INDEX_DEAD = 2,
+    INDEX_INVALID = 3
 } indexFlags;
 
 /*
@@ -36,13 +37,20 @@ uint64_t createIndex(zgdbFile* file);
 
 /*
  * Функция получения индекса по его порядковому номеру.
- * Возвращает NULL при неудаче
+ * Возвращает INDEX_INVALID во флаге индекса при неудаче
  */
-zgdbIndex* getIndex(zgdbFile* file, uint64_t order);
+zgdbIndex getIndex(zgdbFile* file, uint64_t order);
+
+/*
+ * Функция, которая помечает индекс по его порядковому номеру как живой и "привязывает" к нему блок.
+ * Установит в flag - INDEX_ALIVE и изменит blockOffset.
+ * Возвращает false в случае неудачи
+ */
+bool attachIndexToBlock(zgdbFile* file, uint64_t order, uint64_t blockOffset);
 
 /*
  * Функция, которая помечает индекс по его порядковому номеру как мёртвый.
- * Установит в flag - INDEX_DEAD, в id - 0.
+ * Установит в flag - INDEX_DEAD.
  * Возвращает false в случае неудачи
  */
 bool killIndex(zgdbFile* file, uint64_t order);

@@ -13,11 +13,27 @@ uint64_t createIndex(zgdbFile* file) {
     return 0;
 }
 
-zgdbIndex* getIndex(zgdbFile* file, uint64_t order) {
+zgdbIndex getIndex(zgdbFile* file, uint64_t order) {
     zgdbIndex index;
+    if(order > file->zgdbHeader.indexCount - 1) {
+        index.flag = INDEX_INVALID;
+        index.offset = 0;
+        return index;
+    }
     long offset = (long) (sizeof(zgdbHeader) + order * sizeof(zgdbIndex));
     fseek(file->file, offset, SEEK_SET);
     fread(&index, sizeof(zgdbIndex), 1, file->file);
-    printf("%lu", index.offset);
-    return NULL;
+    return index;
+}
+
+bool attachIndexToBlock(zgdbFile* file, uint64_t order, uint64_t blockOffset) {
+    zgdbIndex index = getIndex(file, order);
+    if(index.flag == INDEX_INVALID)
+        return false;
+    index.flag = INDEX_ALIVE;
+    index.offset = blockOffset;
+    long offset = (long) (sizeof(zgdbHeader) + order * sizeof(zgdbIndex));
+    fseek(file->file, offset, SEEK_SET);
+    fwrite(&index, sizeof(zgdbIndex), 1, file->file);
+    return true;
 }

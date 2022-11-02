@@ -21,7 +21,7 @@ typedef struct __attribute__((packed)) zgdbHeader {
  */
 typedef struct zgdbFile {
     FILE* file;
-    zgdbHeader* zgdbHeader;
+    zgdbHeader zgdbHeader;
 } zgdbFile;
 
 /*

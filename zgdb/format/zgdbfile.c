@@ -18,26 +18,26 @@ uint32_t getZgdbFormat() {
 
 zgdbFile* loadOrCreateZgdbFile(const char* path) {
     if (file_exists(path)) {
-        FILE* file = fopen(path, "r+b");
+        FILE* file = fopen(path, "rb+");
         zgdbHeader header;
         fseek(file, 0, SEEK_SET);
         fread(&header, sizeof(zgdbHeader), 1, file);
         zgdbFile* zgdb = (zgdbFile*) malloc(sizeof(zgdbFile));
         if(header.zgdbType != getZgdbFormat())//ZGDB
             return NULL;
-        zgdb->zgdbHeader = &header;
+        zgdb->zgdbHeader = header;
         zgdb->file = file;
         return zgdb;
     } else {
-        FILE* file = fopen(path, "w+b");
+        FILE* file = fopen(path, "wb+");
         zgdbHeader* header = (zgdbHeader*) malloc(sizeof(zgdbHeader));
-        header->indexCount = 0;
-        header->freeListOffset = 0;
+        header->indexCount = 10;
+        header->freeListOffset = 465;
         header->zgdbType = getZgdbFormat();
         fseek(file, 0, SEEK_SET);
         fwrite(header, sizeof(zgdbHeader), 1, file);
         zgdbFile* zgdb = (zgdbFile*) malloc(sizeof(zgdbFile));
-        zgdb->zgdbHeader = header;
+        zgdb->zgdbHeader = *header;
         zgdb->file = file;
         return zgdb;
     }
@@ -45,12 +45,12 @@ zgdbFile* loadOrCreateZgdbFile(const char* path) {
 
 uint8_t closeZgdbFile(zgdbFile* file) {
     fclose(file->file);
-    //free(file->zgdbHeader); double free or corruption (out)???
     free(file);
     return 0;
 }
 
 void saveHeader(zgdbFile* file) {
     fseek(file->file, 0, SEEK_SET);
-    fwrite(file->zgdbHeader, sizeof(zgdbHeader), 1, file->file);
+    zgdbHeader toFile = file->zgdbHeader;
+    fwrite(&toFile, sizeof(zgdbHeader), 1, file->file);
 }

@@ -29,6 +29,12 @@ typedef struct __attribute__((packed)) zgdbIndex {
 } zgdbIndex;
 
 /*
+ * Функция создания индекса в файле.
+ * Возвращает indexNumber из заголовка при неудаче
+ */
+uint64_t createIndex(zgdbFile* file);
+
+/*
  * Функция получения индекса по его порядковому номеру.
  * Возвращает NULL при неудаче
  */

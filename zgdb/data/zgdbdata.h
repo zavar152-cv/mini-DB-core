@@ -103,11 +103,5 @@ typedef struct document {
     size_t elementCount;
 } document;
 
-/*
- * Функция создания индекса в файле.
- * Возвращает indexNumber из заголовка при неудаче
- */
-uint64_t createIndex(zgdbFile* file);//TODO move to .c
-
 
 #endif

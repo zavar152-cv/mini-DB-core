@@ -23,7 +23,7 @@ zgdbFile* loadOrCreateZgdbFile(const char* path) {
         fseek(file, 0, SEEK_SET);
         fread(&header, sizeof(zgdbHeader), 1, file);
         zgdbFile* zgdb = (zgdbFile*) malloc(sizeof(zgdbFile));
-        if(header.zgdbType != getZgdbFormat())//ZGDB
+        if(header.zgdbType != getZgdbFormat())
             return NULL;
         zgdb->zgdbHeader = header;
         zgdb->file = file;
@@ -31,8 +31,8 @@ zgdbFile* loadOrCreateZgdbFile(const char* path) {
     } else {
         FILE* file = fopen(path, "wb+");
         zgdbHeader* header = (zgdbHeader*) malloc(sizeof(zgdbHeader));
-        header->indexCount = 10;
-        header->freeListOffset = 465;
+        header->indexCount = 0;
+        header->freeListOffset = 0;
         header->zgdbType = getZgdbFormat();
         fseek(file, 0, SEEK_SET);
         fwrite(header, sizeof(zgdbHeader), 1, file);

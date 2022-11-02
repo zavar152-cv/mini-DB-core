@@ -26,7 +26,11 @@ int main() {
     printf("%d\n", index.flag);
     printf("%lu\n", index.offset);
 
-    attachIndexToBlock(pFile, 4, 824);
+    if(!attachIndexToBlock(pFile, 4, 824)) {
+        printf("Invalid index");
+        return 0;
+    }
+
     index = getIndex(pFile, 4);
     printf("%d\n", index.flag);
     printf("%lu\n", index.offset);

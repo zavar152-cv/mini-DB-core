@@ -11,6 +11,7 @@
  * INDEX_ALIVE - индекс привязан к существующему блоку, имеет id и соответствующий offset
  * INDEX_DEAD - индекс существует, привязан к блоку, который является "мёртвым" и может быть
  *              переиспользован, id равен 0, offset сохраняется без изменений
+ * INDEX_INVALID - служебный флаг, необходим для возврата ошибки из функций
  */
 typedef enum indexFlags {
     INDEX_NEW = 0,
@@ -46,7 +47,7 @@ zgdbIndex getIndex(zgdbFile* file, uint64_t order);
  * Установит в flag - INDEX_ALIVE и изменит blockOffset.
  * Возвращает false в случае неудачи
  */
-bool attachIndexToBlock(zgdbFile* file, uint64_t order, uint64_t blockOffset);
+bool attachIndexToBlock(zgdbFile* file, uint64_t order, off_t blockOffset);
 
 /*
  * Функция, которая помечает индекс по его порядковому номеру как мёртвый.
@@ -58,6 +59,6 @@ bool killIndex(zgdbFile* file, uint64_t order);
 /*
  * Функция для обновления offset в блоке по его порядковому номеру
  */
-bool updateOffset(zgdbFile* file, uint64_t indexOrder, uint64_t offset);
+bool updateOffset(zgdbFile* file, uint64_t indexOrder, off_t offset);
 
 #endif

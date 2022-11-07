@@ -1,18 +1,24 @@
 #ifndef ZGDBPROJECT_ZGDBFILE_H
 #define ZGDBPROJECT_ZGDBFILE_H
-
+#define _FILE_OFFSET_BITS 64
 #include <stdio.h>
 #include <stdint.h>
 
 /*
  * Структура для заголовка файла, где храниться мета информация
  * zgdbType - 4 символа в UTF8 (ZGDB)
+ * version - версия типа
  * indexCount - количество всех индексов (5 байт)
- * freeListOffset - смещение на структуру с доступными индексами
+ * betweenSpace - пространство между первым блоком и последним индексом
+ * fileSize - размер файла (с учётом заголовка), должен быть 8 байт
+ * freeListOffset - смещение на структуру с доступными индексами (reserved)
  */
 typedef struct __attribute__((packed)) zgdbHeader {
     uint32_t zgdbType;
+    uint8_t version;
     uint64_t indexCount: 40;
+    uint8_t betweenSpace;
+    off_t fileSize;
     uint64_t freeListOffset;
 } zgdbHeader;
 

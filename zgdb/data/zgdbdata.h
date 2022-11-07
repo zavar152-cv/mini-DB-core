@@ -11,25 +11,21 @@
  * TYPE_DOUBLE - double
  * TYPE_BOOLEAN - uint8 (два значения)
  * TYPE_STRING - UTF-8 string (с длиной в начале)
- * TYPE_DOCUMENT - вложенный документ
  */
 typedef enum elementType {
     TYPE_INT = 0x01,
     TYPE_DOUBLE = 0x02,
     TYPE_BOOLEAN = 0x03,
     TYPE_STRING = 0x04,
-    TYPE_EMBEDDED_DOCUMENT = 0x05
 } elementType;
 
 /*
  * Описание символов-терминаторов в документе
  * DOCUMENT_TERMINATOR - терминатор в конце документа
- * EMBEDDED_DOCUMENT_TERMINATOR - терминатор в конце вложенного документа
  * NULL_TERMINATOR - нуль терминатор для строк и ключей
  */
 typedef enum terminators {
     DOCUMENT_TERMINATOR = 0xFF,
-    EMBEDDED_DOCUMENT_TERMINATOR = 0xFE,
     NULL_TERMINATOR = 0x00
 } terminators;
 
@@ -41,22 +37,27 @@ typedef enum terminators {
  */
 typedef struct __attribute__((packed)) documentId {
     uint32_t timestamp;
-    uint64_t offset;
+    off_t offset;
 } documentId;
 
 /*
  * Структура для заголовка документа
  * size - размер документа в байтах (5 байт)
- * indexOrder - порядковый номер привязанного индекса (5 байт)
- * internalOffset - смещение документа относительно родительского (5 байт)
+ * indexAttached - порядковый номер привязанного индекса (5 байт)
+ * id - идентификатор документа (12 байт)
+ * name - имя документа (строчка длиной в 12 байт и нуль)
+ * indexSon - порядковый номер индекса первого сына (5 байт)
+ * indexBrother - порядковый номер индекса брата (5 байт)
+ * indexParent - порядковый номер индекса родителя (5 байт)
  */
 typedef struct __attribute__((packed)) documentHeader {
     uint64_t size: 40;
-    union {
-        uint64_t indexOrder: 40;
-        uint64_t internalOffset: 40;
-    };
+    uint64_t indexAttached: 40;
     documentId id;
+    unsigned char name[13];
+    uint64_t indexSon: 40;
+    uint64_t indexBrother: 40;
+    uint64_t indexParent: 40;
 } documentHeader;
 
 /*
@@ -75,9 +76,7 @@ typedef struct document document;
  * Структура для представления элемента вида - key:value
  * type - один из типов выше (enum elementType)
  * key - ключ (строчка длиной в 12 байт и нуль)
- * В union храниться значение элемента в случае типов int, double, boolean;
- * А в случае типов string и document храниться указатель на соответствующую
- * структуру
+ * В union храниться значение элемента типов int, double, boolean, string;
  */
 typedef struct element {
     uint8_t type;
@@ -86,8 +85,7 @@ typedef struct element {
         int32_t integerValue;
         double doubleValue;
         uint8_t booleanValue;
-        string* stringValue;
-        document* documentValue;
+        string stringValue;
     };
 } element;
 
@@ -99,8 +97,8 @@ typedef struct element {
  */
 typedef struct document {
     documentHeader header;
-    element* elements;
     size_t elementCount;
+    element* elements;
 } document;
 
 

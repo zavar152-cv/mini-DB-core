@@ -6,14 +6,12 @@
 
 /*
  * Структура для схемы документа
- * size - размер блока в байтах (5 байт)
  * elements - указатель на массив элементов
  * elementCount - количество элементов
  */
 typedef struct documentSchema {
-    uint64_t size: 40;
-    element* elements;
     size_t elementCount;
+    element* elements;
 } documentSchema;
 
 /*
@@ -27,12 +25,11 @@ documentSchema initSchema(size_t elementCount);
 void addIntToSchema(documentSchema* schema, unsigned char* key, int32_t initValue);
 void addDoubleToSchema(documentSchema* schema, unsigned char* key, double initValue);
 void addBooleanToSchema(documentSchema* schema, unsigned char* key, uint8_t initValue);
-void addStringToSchema(documentSchema* schema, unsigned char* key, string* initValue);
-void addDocumentToSchema(documentSchema* schema, unsigned char* key, document* initValue);
+void addStringToSchema(documentSchema* schema, unsigned char* key, string initValue);
 
 /*
  * Функция для создания документа в файле из заданной схеме
  */
-void createDocument(zgdbFile* file, documentSchema* schema);
+void createDocument(zgdbFile* file, documentSchema* schema);//TODO вставка по идее должна быть не здесь
 
 #endif

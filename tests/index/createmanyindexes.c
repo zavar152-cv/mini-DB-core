@@ -24,7 +24,7 @@ int main() {
     printf("Index count: %lu\n", pFile->zgdbHeader.indexCount);
     printf("Version: %d\n", pFile->zgdbHeader.version);
     printf("Size: %ld\n", pFile->zgdbHeader.fileSize);
-
+    closeZgdbFile(pFile);
 
     return 0;
 }

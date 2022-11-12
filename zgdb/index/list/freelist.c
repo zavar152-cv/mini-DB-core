@@ -43,7 +43,7 @@ void insertNode(freeIndexesList* list, node* newNode) {
         return;
     }
 
-    node* temp = list->head->next;
+    node* temp = list->head->next;//TODO two dead error
     while ((temp->blockSize) < (newNode->blockSize))
         temp = temp->next;
 
@@ -96,7 +96,7 @@ uint64_t* findRelevantIndex(freeIndexesList* list, uint64_t reqSize) {
 void printList(freeIndexesList* list) {
     node* temp = list->head;
     while (temp != NULL) {
-        printf("%lu: %lu ", temp->indexOrder, temp->blockSize);
+        printf("%lu: %lu\n", temp->indexOrder, temp->blockSize);
         temp = temp->next;
     }
 }

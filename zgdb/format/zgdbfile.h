@@ -3,6 +3,7 @@
 #define _FILE_OFFSET_BITS 64
 #include <stdio.h>
 #include <stdint.h>
+#include "../index/list/freelist.h"
 #ifdef __linux__
 #include <sys/mman.h>
 #endif
@@ -35,6 +36,7 @@ typedef struct zgdbFile {
     FILE* file;
     zgdbHeader zgdbHeader;
     void* pIndexesMmap;
+    freeIndexesList freeList;
 } zgdbFile;
 
 /*

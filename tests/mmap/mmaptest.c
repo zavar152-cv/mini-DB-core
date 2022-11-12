@@ -57,5 +57,16 @@ int main() {
     printf("Flag: %d\n", getIndex(pFile, 42).flag);
     printf("Offset: %llu\n\n", getIndex(pFile, 42).offset);
 
+    printf("Kill index...\n");
+    killIndex(pFile, pFile->zgdbHeader.indexCount-13);
+
+    printf("Index %d\n", pFile->zgdbHeader.indexCount-13);
+    printf("Flag: %d\n", getIndex(pFile, pFile->zgdbHeader.indexCount-13).flag);
+    printf("Offset: %llu\n\n", getIndex(pFile, pFile->zgdbHeader.indexCount-13).offset);
+
+    printList(&(pFile->freeList));
+
+    closeZgdbFile(pFile);
+
     return 0;
 }

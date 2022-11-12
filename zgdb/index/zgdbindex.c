@@ -2,8 +2,7 @@
 #include "zgdbindex.h"
 
 uint64_t createIndex(zgdbFile* file) {
-    createIndexes(file, 1);
-    return 0;
+    return createIndexes(file, 1);
 }
 
 uint64_t createIndexes(zgdbFile* file, uint64_t n) {
@@ -46,5 +45,16 @@ bool attachIndexToBlock(zgdbFile* file, uint64_t order, off_t blockOffset) {
     pIndex[order].flag = INDEX_ALIVE;
     pIndex[order].offset = blockOffset;
     msync(file->pIndexesMmap, file->zgdbHeader.indexCount * sizeof(zgdbIndex), MS_ASYNC);
+    return true;
+}
+
+bool killIndex(zgdbFile* file, uint64_t order) {
+    if (order > file->zgdbHeader.indexCount - 1) {
+        return false;
+    }
+    zgdbIndex* pIndex = (zgdbIndex*) file->pIndexesMmap;
+    pIndex[order].flag = INDEX_DEAD;
+    msync(file->pIndexesMmap, file->zgdbHeader.indexCount * sizeof(zgdbIndex), MS_ASYNC);
+    insertDeadIndex(&(file->freeList), order, 534);//TODO blocksize is const
     return true;
 }

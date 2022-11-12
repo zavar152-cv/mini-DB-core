@@ -10,14 +10,45 @@ bool file_exists(const char* filename) {
 
 uint32_t getZgdbFormat() {
     unsigned char format[] = {'Z', 'G', 'D', 'B'};
-    return (uint32_t)format[3] << 24 |
-           (uint32_t)format[2] << 16 |
-           (uint32_t)format[1] << 8  |
-           (uint32_t)format[0];
+    return (uint32_t) format[3] << 24 |
+           (uint32_t) format[2] << 16 |
+           (uint32_t) format[1] << 8 |
+           (uint32_t) format[0];
 }
 
 uint8_t getVersion() {
     return 1;
+}
+
+void writeFreelist(zgdbFile* file) {
+    fseeko(file->file, file->zgdbHeader.fileSize, SEEK_SET);
+    fwrite(&(file->freeList), sizeof(freeIndexesList), 1, file->file);
+    node* temp = file->freeList.head;
+    while (temp != NULL) {
+        fwrite(temp, sizeof(node), 1, file->file);
+        temp = temp->next;
+    }
+}
+
+void readFreelist(zgdbFile* file) {
+    fseeko(file->file, file->zgdbHeader.fileSize, SEEK_SET);
+    struct freeIndexesList list;
+    fread(&list, sizeof(freeIndexesList), 1, file->file);
+    list.head = NULL;
+    list.tail = NULL;
+    uint64_t count = list.indexesCount;
+    node temp[count];
+    if(count != 0) {
+        fread(temp, sizeof(node), count, file->file);
+        for (int i = 0; i < count; ++i) {
+            if (temp[i].blockSize == 0) {
+                insertNewIndex(&list, temp[i].indexOrder);
+            } else {
+                insertDeadIndex(&list, temp[i].indexOrder, temp[i].blockSize);
+            }
+        }
+    }
+    file->freeList = list;
 }
 
 zgdbFile* loadOrCreateZgdbFile(const char* path) {//TODO printf errors
@@ -27,12 +58,13 @@ zgdbFile* loadOrCreateZgdbFile(const char* path) {//TODO printf errors
         fseeko(file, 0, SEEK_SET);
         fread(&header, sizeof(zgdbHeader), 1, file);
         zgdbFile* zgdb = (zgdbFile*) malloc(sizeof(zgdbFile));
-        if(header.zgdbType != getZgdbFormat())
+        if (header.zgdbType != getZgdbFormat())
             return NULL;
-        if(header.version != getVersion())
+        if (header.version != getVersion())
             return NULL;
         zgdb->zgdbHeader = header;
         zgdb->file = file;
+        readFreelist(zgdb);
         return zgdb;
     } else {
         FILE* file = fopen(path, "wb+");
@@ -48,11 +80,13 @@ zgdbFile* loadOrCreateZgdbFile(const char* path) {//TODO printf errors
         zgdbFile* zgdb = (zgdbFile*) malloc(sizeof(zgdbFile));
         zgdb->zgdbHeader = *header;
         zgdb->file = file;
+        zgdb->freeList = *createIndexesList();
         return zgdb;
     }
 }
 
 uint8_t closeZgdbFile(zgdbFile* file) {
+    writeFreelist(file);
     fclose(file->file);
     free(file);
     return 0;

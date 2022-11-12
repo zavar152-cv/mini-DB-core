@@ -3,9 +3,10 @@
 
 int main() {
     freeIndexesList* pFreeIndexesList = createIndexesList();
+    insertDeadIndex(pFreeIndexesList, 5, 64);
+    insertDeadIndex(pFreeIndexesList, 12, 64);
     insertNewIndex(pFreeIndexesList, 1);
     insertNewIndex(pFreeIndexesList, 4);
-    insertDeadIndex(pFreeIndexesList, 5, 64);
 
     struct timespec begin, end;
 

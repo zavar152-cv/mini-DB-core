@@ -34,6 +34,6 @@ int main() {
     index = getIndex(pFile, 4);
     printf("%d\n", index.flag);
     printf("%lu\n", index.offset);
-
+    closeZgdbFile(pFile);
     return 0;
 }

@@ -37,6 +37,12 @@ typedef struct __attribute__((packed)) zgdbIndex {
 uint64_t createIndex(zgdbFile* file);
 
 /*
+ * Функция создания нескольких индексов в файле.
+ * Возвращает indexNumber из заголовка при неудаче
+ */
+uint64_t createIndexes(zgdbFile* file, uint64_t n);
+
+/*
  * Функция получения индекса по его порядковому номеру.
  * Возвращает INDEX_INVALID во флаге индекса при неудаче
  */

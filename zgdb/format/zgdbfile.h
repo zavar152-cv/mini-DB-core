@@ -3,6 +3,12 @@
 #define _FILE_OFFSET_BITS 64
 #include <stdio.h>
 #include <stdint.h>
+#ifdef __linux__
+#include <sys/mman.h>
+#endif
+#ifdef __MINGW32__
+#include "../../mman-win32/mman.h"
+#endif
 
 /*
  * Структура для заголовка файла, где храниться мета информация
@@ -28,6 +34,7 @@ typedef struct __attribute__((packed)) zgdbHeader {
 typedef struct zgdbFile {
     FILE* file;
     zgdbHeader zgdbHeader;
+    void* pIndexesMmap;
 } zgdbFile;
 
 /*

@@ -36,7 +36,7 @@ void insertNode(freeIndexesList* list, node* newNode) {
         return;
     }
 
-    if (newNode->blockSize > list->tail->blockSize) {
+    if (newNode->blockSize >= list->tail->blockSize) {
         newNode->prev = list->tail;
         list->tail->next = newNode;
         list->tail = newNode;

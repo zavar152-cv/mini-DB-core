@@ -51,20 +51,30 @@ int main() {
     }
 
     printf("Update index...\n");
-    attachIndexToBlock(pFile, 42, 1337);
-
-    printf("Index %d\n", 42);
-    printf("Flag: %d\n", getIndex(pFile, 42).flag);
-    printf("Offset: %llu\n\n", getIndex(pFile, 42).offset);
+    if(attachIndexToBlock(pFile, 3, 1337)) {
+        printf("Index %d\n", 3);
+        printf("Flag: %d\n", getIndex(pFile, 3).flag);
+        printf("Offset: %llu\n\n", getIndex(pFile, 3).offset);
+    } else {
+        printf("false\n");
+    }
 
     printf("Kill index...\n");
-    killIndex(pFile, pFile->zgdbHeader.indexCount-13);
-
-    printf("Index %d\n", pFile->zgdbHeader.indexCount-13);
-    printf("Flag: %d\n", getIndex(pFile, pFile->zgdbHeader.indexCount-13).flag);
-    printf("Offset: %llu\n\n", getIndex(pFile, pFile->zgdbHeader.indexCount-13).offset);
+    if(killIndex(pFile, pFile->zgdbHeader.indexCount-1)) {
+        printf("Index %d\n", pFile->zgdbHeader.indexCount-1);
+        printf("Flag: %d\n", getIndex(pFile, pFile->zgdbHeader.indexCount-1).flag);
+        printf("Offset: %llu\n\n", getIndex(pFile, pFile->zgdbHeader.indexCount-1).offset);
+    } else {
+        printf("false\n");
+    }
 
     printList(&(pFile->freeList));
+
+    for (int i = 0; i < pFile->zgdbHeader.indexCount; ++i) {
+        printf("Index %d\n", i);
+        printf("Flag: %d\n", getIndex(pFile, i).flag);
+        printf("Offset: %llu\n\n", getIndex(pFile, i).offset);
+    }
 
     closeZgdbFile(pFile);
 

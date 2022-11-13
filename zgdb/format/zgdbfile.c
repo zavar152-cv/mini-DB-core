@@ -86,7 +86,7 @@ zgdbFile* loadOrCreateZgdbFile(const char* path) {//TODO printf errors
 }
 
 uint8_t closeZgdbFile(zgdbFile* file) {
-    writeFreelist(file);
+    //writeFreelist(file);
     fclose(file->file);
     free(file);
     return 0;

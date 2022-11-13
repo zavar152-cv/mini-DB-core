@@ -4,7 +4,7 @@
 #include "format/zgdbfile.h"
 #include "index/zgdbindex.h"
 
-#define INDEX_INITIAL_CAPACITY 40
+#define INDEX_INITIAL_CAPACITY 4
 
 zgdbFile* init(const char* path);
 

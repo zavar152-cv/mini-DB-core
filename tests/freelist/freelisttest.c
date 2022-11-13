@@ -1,5 +1,5 @@
 #include <time.h>
-#include "../../zgdb/index/list/freelist.h"
+#include "index/list/freelist.h"
 
 int main() {
     freeIndexesList* pFreeIndexesList = createIndexesList();

@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-#include "../format/zgdbfile.h"
+#include "format/zgdbfile.h"
 
 /*
  * Описание возможных типов данных в документе

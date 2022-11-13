@@ -1,8 +1,8 @@
 #ifndef ZGDBPROJECT_ZGDBSCHEMA_H
 #define ZGDBPROJECT_ZGDBSCHEMA_H
 
-#include "../format/zgdbfile.h"
-#include "../data/zgdbdata.h"
+#include "format/zgdbfile.h"
+#include "data/zgdbdata.h"
 
 /*
  * Структура для схемы документа

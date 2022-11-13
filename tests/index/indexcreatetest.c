@@ -1,4 +1,4 @@
-#include "../../zgdb/index/zgdbindex.h"
+#include "index/zgdbindex.h"
 
 int main() {
     zgdbFile* pFile = loadOrCreateZgdbFile("/tmp/test.zgdb");

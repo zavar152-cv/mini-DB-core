@@ -3,12 +3,12 @@
 #define _FILE_OFFSET_BITS 64
 #include <stdio.h>
 #include <stdint.h>
-#include "../index/list/freelist.h"
+#include "index/list/freelist.h"
 #ifdef __linux__
 #include <sys/mman.h>
 #endif
 #ifdef __MINGW32__
-#include "../../mman-win32/mman.h"
+#include "mman-win32/mman.h"
 #endif
 
 /*

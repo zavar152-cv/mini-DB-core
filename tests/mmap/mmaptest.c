@@ -1,4 +1,4 @@
-#include "../../zgdb/zgdb.h"
+#include "zgdb.h"
 
 int main() {
     #ifdef __linux__

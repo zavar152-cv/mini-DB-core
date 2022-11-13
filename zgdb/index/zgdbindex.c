@@ -17,6 +17,8 @@ uint64_t createIndexes(zgdbFile* file, uint64_t n) {
     fwrite(&index, sizeof(zgdbIndex), n, file->file);
     file->zgdbHeader.indexCount += n;
     file->zgdbHeader.fileSize += (off_t) (n * sizeof(zgdbIndex));
+    printf("Index size: %llu\n", sizeof(zgdbIndex));
+    printf("Sum size: %llu\n", n * sizeof(zgdbIndex));
     saveHeader(file);
     file->pIndexesMmap = (char *) mmap(NULL, file->zgdbHeader.indexCount * sizeof(zgdbIndex),
                                         PROT_READ | PROT_WRITE,

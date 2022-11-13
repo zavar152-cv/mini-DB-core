@@ -75,6 +75,7 @@ int main() {
         printf("Flag: %d\n", getIndex(pFile, i).flag);
         printf("Offset: %llu\n\n", getIndex(pFile, i).offset);
     }
+    printf("Size: %ld\n\n", pFile->zgdbHeader.fileSize);
 
     closeZgdbFile(pFile);
 

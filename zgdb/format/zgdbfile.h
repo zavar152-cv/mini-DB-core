@@ -20,6 +20,7 @@
  * fileSize - размер файла (с учётом заголовка), должен быть 8 байт
  * freeListOffset - смещение на структуру с доступными индексами (reserved)
  */
+
 typedef struct __attribute__((packed)) zgdbHeader {
     uint32_t zgdbType;
     uint8_t version;

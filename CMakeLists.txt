@@ -10,7 +10,7 @@ set(GENERAL_SRC zgdb/format/zgdbfile.c zgdb/format/zgdbfile.h zgdb/index/zgdbind
         zgdb/schema/zgdbschema.c zgdb/schema/zgdbschema.h zgdb/zgdb.c zgdb/zgdb.h)
 
 set(MAIN tests/mmap/mmaptest.c)
-
+set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -mno-ms-bitfields")
 if (WIN32)
     set(WIN_SRC lib/mman-win32/mman.c lib/mman-win32/mman.h)
     add_executable(ZGDBProject ${WIN_SRC} ${GENERAL_SRC} ${MAIN})

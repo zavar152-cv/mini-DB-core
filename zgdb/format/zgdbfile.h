@@ -21,7 +21,7 @@
  * freeListOffset - смещение на структуру с доступными индексами (reserved)
  */
 
-typedef struct __attribute__((packed)) zgdbHeader {
+typedef struct zgdbHeader {
     uint32_t zgdbType;
     uint8_t version;
     uint64_t indexCount: 40;

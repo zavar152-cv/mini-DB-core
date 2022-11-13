@@ -10,13 +10,13 @@
  * TYPE_INT - int32
  * TYPE_DOUBLE - double
  * TYPE_BOOLEAN - uint8 (два значения)
- * TYPE_STRING - UTF-8 string (с длиной в начале)
+ * TYPE_TEXT - UTF-8 text (с длиной в начале)
  */
 typedef enum elementType {
     TYPE_INT = 0x01,
     TYPE_DOUBLE = 0x02,
     TYPE_BOOLEAN = 0x03,
-    TYPE_STRING = 0x04,
+    TYPE_TEXT = 0x04,
 } elementType;
 
 /*
@@ -50,7 +50,7 @@ typedef struct __attribute__((packed)) documentId {
  * indexBrother - порядковый номер индекса брата (5 байт)
  * indexParent - порядковый номер индекса родителя (5 байт)
  */
-typedef struct __attribute__((packed)) documentHeader {
+typedef struct __attribute__((packed)) documentHeader {//TODO problem with size on windows?
     uint64_t size: 40;
     uint64_t indexAttached: 40;
     documentId id;
@@ -65,10 +65,10 @@ typedef struct __attribute__((packed)) documentHeader {
  * size - размер
  * data - указатель на символы
  */
-typedef struct string {
+typedef struct text {
     uint32_t size;
     unsigned char* data;
-} string;
+} text;
 
 typedef struct document document;
 
@@ -76,16 +76,16 @@ typedef struct document document;
  * Структура для представления элемента вида - key:value
  * type - один из типов выше (enum elementType)
  * key - ключ (строчка длиной в 12 байт и нуль)
- * В union храниться значение элемента типов int, double, boolean, string;
+ * В union храниться значение элемента типов int, double, boolean, text;
  */
 typedef struct element {
     uint8_t type;
-    unsigned char key[13];
+    char key[13];
     union {
         int32_t integerValue;
         double doubleValue;
         uint8_t booleanValue;
-        string stringValue;
+        text textValue;
     };
 } element;
 

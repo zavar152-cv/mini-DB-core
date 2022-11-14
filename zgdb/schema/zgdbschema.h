@@ -29,9 +29,4 @@ void addDoubleToSchema(documentSchema* schema, char* key, double initValue);
 void addBooleanToSchema(documentSchema* schema, char* key, uint8_t initValue);
 void addTextToSchema(documentSchema* schema, char* key, text initValue);
 
-/*
- * Функция для создания документа в файле из заданной схеме
- */
-void createDocument(zgdbFile* file, documentSchema* schema);//TODO вставка по идее должна быть не здесь
-
 #endif

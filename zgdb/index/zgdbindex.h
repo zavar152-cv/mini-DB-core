@@ -27,7 +27,7 @@ typedef enum indexFlags {
  */
 typedef struct __attribute__((packed)) zgdbIndex {
     uint8_t flag;
-    uint64_t offset;
+    off_t offset;
 } zgdbIndex;
 
 /*

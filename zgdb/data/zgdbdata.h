@@ -48,16 +48,19 @@ typedef struct __attribute__((packed)) documentId {
  * name - имя документа (строчка длиной в 12 байт и нуль)
  * indexSon - порядковый номер индекса первого сына (5 байт)
  * indexBrother - порядковый номер индекса брата (5 байт)
- * indexParent - порядковый номер индекса родителя (5 байт)
+ * attrCount - количество атрибутов (4 байта)
+ *
+ * 0 для indexSon и indexBrother означает NULL, т.к. ни у кого не может быть
+ * сыном или братом корень дерева (корень привязан к нулевому индексу)
  */
-typedef struct __attribute__((packed)) documentHeader {//TODO problem with size on windows?
+typedef struct documentHeader {
     uint64_t size: 40;
     uint64_t indexAttached: 40;
     documentId id;
     unsigned char name[13];
     uint64_t indexSon: 40;
     uint64_t indexBrother: 40;
-    uint64_t indexParent: 40;
+    uint32_t attrCount;
 } documentHeader;
 
 /*

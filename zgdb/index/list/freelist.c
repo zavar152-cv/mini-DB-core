@@ -16,6 +16,7 @@ node* createNewNode(uint64_t indexOrder, uint64_t blockSize) {
     newNode->blockSize = blockSize;
     newNode->indexOrder = indexOrder;
     newNode->next = NULL;
+    newNode->prev = NULL;
     return newNode;
 }
 

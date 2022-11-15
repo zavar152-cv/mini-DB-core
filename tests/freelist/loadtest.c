@@ -2,12 +2,12 @@
 #include "zgdb.h"
 
 int main() {
-    #ifdef __linux__
-        zgdbFile* pFile = init("/tmp/test.zgdb");
-    #endif
-    #ifdef __MINGW32__
-        zgdbFile* pFile = init("D:/test.zgdb");
-    #endif
+#ifdef __linux__
+    zgdbFile* pFile = init("/tmp/test.zgdb");
+#endif
+#ifdef __MINGW32__
+    zgdbFile* pFile = init("D:/test.zgdb");
+#endif
 
     if(pFile == NULL) {
         printf("Invalid format");
@@ -26,7 +26,13 @@ int main() {
         printf("Offset: %llu\n\n", getIndex(pFile, i).offset);
     }
 
-    documentHeader header = getDocumentHeader(pFile, 0);
+    printf("List before:\n");
+    printList(&(pFile->freeList));
+    if(getIndex(pFile, 3).flag != INDEX_DEAD)
+        killIndex(pFile, 3);
+    //insertNewIndex(&(pFile->freeList), 1);
+    printf("List after:\n");
+    printList(&(pFile->freeList));
 
     finish(pFile);
 

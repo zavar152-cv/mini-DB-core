@@ -20,38 +20,40 @@ uint8_t getVersion() {
     return 1;
 }
 
-//void writeFreelist(zgdbFile* file) {
-//    fseeko(file->file, file->zgdbHeader.fileSize, SEEK_SET);
-//    printf("Seek: %lld\n", ftello(file->file));
-//    fwrite(&(file->freeList), sizeof(freeIndexesList), 1, file->file);
-//    node* temp = file->freeList.head;
-//    while (temp != NULL) {
-//        fwrite(temp, sizeof(node), 1, file->file);
-//        temp = temp->next;
-//    }
-//}
-//
-//void readFreeList(zgdbFile* file) {
-//    fseeko(file->file, file->zgdbHeader.fileSize, SEEK_SET);
-//    printf("Seek: %lld\n", ftello(file->file));
-//    struct freeIndexesList list;
-//    fread(&list, sizeof(freeIndexesList), 1, file->file);
-//    list.head = NULL;
-//    list.tail = NULL;
-//    uint64_t count = list.indexesCount;
-//    node temp[count];
-//    if(count != 0) {
-//        fread(temp, sizeof(node), count, file->file);
-//        for (int i = 0; i < count; ++i) {
-//            if (temp[i].blockSize == 0) {
-//                insertNewIndex(&list, temp[i].indexOrder);
-//            } else {
-//                insertDeadIndex(&list, temp[i].indexOrder, temp[i].blockSize);
-//            }
-//        }
-//    }
-//    file->freeList = list;
-//}
+void writeFreelist(zgdbFile* file) {
+    fseeko(file->file, file->zgdbHeader.fileSize, SEEK_SET);
+    printf("Seek: %lld\n", ftello(file->file));
+    fwrite(&(file->freeList), sizeof(freeIndexesList), 1, file->file);
+    node* temp = file->freeList.head;
+    while (temp != NULL) {
+        fwrite(temp, sizeof(node), 1, file->file);
+        temp = temp->next;
+    }
+}
+
+void readFreeList(zgdbFile* file) {
+    fseeko(file->file, file->zgdbHeader.fileSize, SEEK_SET);
+    printf("Seek: %lld\n", ftello(file->file));
+    freeIndexesList list;
+    fread(&list, sizeof(freeIndexesList), 1, file->file);
+    list.head = NULL;
+    list.tail = NULL;
+    uint64_t count = list.indexesCount;
+    list.indexesCount = 0;
+    list.newIndexesCount = 0;
+    node temp[count];
+    if(count != 0) {
+        fread(temp, sizeof(node), count, file->file);
+        for (int i = 0; i < count; ++i) {
+            if (temp[i].blockSize == 0) {
+                insertNewIndex(&list, temp[i].indexOrder);
+            } else {
+                insertDeadIndex(&list, temp[i].indexOrder, temp[i].blockSize);
+            }
+        }
+    }
+    file->freeList = list;
+}
 
 zgdbFile* loadOrCreateZgdbFile(const char* path) {
     if (file_exists(path)) {
@@ -70,6 +72,7 @@ zgdbFile* loadOrCreateZgdbFile(const char* path) {
         }
         zgdb->zgdbHeader = header;
         zgdb->file = file;
+        readFreeList(zgdb);
         return zgdb;
     } else {
         FILE* file = fopen(path, "wb+");
@@ -91,6 +94,7 @@ zgdbFile* loadOrCreateZgdbFile(const char* path) {
 }
 
 bool closeZgdbFile(zgdbFile* file) {
+    writeFreelist(file);
     int i = fclose(file->file);
     free(file);
     return i == 0 ? true : false;

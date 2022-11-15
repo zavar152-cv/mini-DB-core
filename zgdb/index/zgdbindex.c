@@ -50,7 +50,7 @@ bool attachIndexToBlock(zgdbFile* file, uint64_t order, off_t blockOffset) {
     return true;
 }
 
-bool killIndex(zgdbFile* file, uint64_t order) {
+bool killIndex(zgdbFile* file, uint64_t order) {//TODO check if index is alive
     if (order > file->zgdbHeader.indexCount - 1) {
         return false;
     }

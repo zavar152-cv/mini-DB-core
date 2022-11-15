@@ -17,6 +17,11 @@ zgdbFile* init(const char* path) {
     return pFile;
 }
 
+bool finish(zgdbFile* file) {
+    munmap(file->pIndexesMmap, file->zgdbHeader.indexCount * sizeof(zgdbIndex));
+    return closeZgdbFile(file);
+}
+
 documentId generateId(off_t offset) {
     uint32_t now = (uint32_t)time(NULL);
     documentId id = {.timestamp = now, .offset = offset};
@@ -32,6 +37,7 @@ void createRootDocument(zgdbFile* file, off_t offset) {
 
     fwrite(&header, sizeof(documentHeader), 1, file->file);
     file->zgdbHeader.fileSize += sizeof(documentHeader);
+    saveHeader(file);
 }
 
 documentHeader getDocumentHeader(zgdbFile* file, uint64_t order) {

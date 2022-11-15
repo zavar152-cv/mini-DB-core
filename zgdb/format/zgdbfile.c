@@ -53,17 +53,21 @@ uint8_t getVersion() {
 //    file->freeList = list;
 //}
 
-zgdbFile* loadOrCreateZgdbFile(const char* path) {//TODO printf errors
+zgdbFile* loadOrCreateZgdbFile(const char* path) {
     if (file_exists(path)) {
         FILE* file = fopen(path, "rb+");
         zgdbHeader header;
         fseeko(file, 0, SEEK_SET);
         fread(&header, sizeof(zgdbHeader), 1, file);
         zgdbFile* zgdb = (zgdbFile*) malloc(sizeof(zgdbFile));
-        if (header.zgdbType != getZgdbFormat())
+        if (header.zgdbType != getZgdbFormat()) {
+            fprintf(stderr, "Invalid ZGDB format\n");
             return NULL;
-        if (header.version != getVersion())
+        }
+        if (header.version != getVersion()) {
+            fprintf(stderr, "Invalid format version\n");
             return NULL;
+        }
         zgdb->zgdbHeader = header;
         zgdb->file = file;
         return zgdb;
@@ -86,10 +90,10 @@ zgdbFile* loadOrCreateZgdbFile(const char* path) {//TODO printf errors
     }
 }
 
-uint8_t closeZgdbFile(zgdbFile* file) {
-    fclose(file->file);
+bool closeZgdbFile(zgdbFile* file) {
+    int i = fclose(file->file);
     free(file);
-    return 0;
+    return i == 0 ? true : false;
 }
 
 void saveHeader(zgdbFile* file) {

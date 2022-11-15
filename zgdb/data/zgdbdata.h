@@ -104,5 +104,4 @@ typedef struct document {
     element* elements;
 } document;
 
-
 #endif

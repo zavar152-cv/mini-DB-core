@@ -77,7 +77,7 @@ int main() {
     }
     printf("Size: %ld\n\n", pFile->zgdbHeader.fileSize);
 
-    closeZgdbFile(pFile);
+    finish(pFile);
 
     return 0;
 }

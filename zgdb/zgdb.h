@@ -11,7 +11,9 @@
 
 zgdbFile* init(const char* path);
 
-//TODO will be replaced, only for debug
+bool finish(zgdbFile* file);
+
+//TODO only for debug, will be removed
 documentHeader getDocumentHeader(zgdbFile* file, uint64_t order);
 
 #endif

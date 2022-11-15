@@ -4,16 +4,16 @@
 #include <stdio.h>
 #include <stdint.h>
 
-typedef struct __attribute__((packed)) node node;
+typedef struct node node;
 
-typedef struct __attribute__((packed)) node {
+typedef struct node {
     uint64_t indexOrder: 40;
     uint64_t blockSize: 40;
     node* next;
     node* prev;
 } node;
 
-typedef struct __attribute__((packed)) freeIndexesList {
+typedef struct freeIndexesList {
     struct node* head;
     struct node* tail;
     uint64_t indexesCount: 40;

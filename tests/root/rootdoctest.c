@@ -28,7 +28,7 @@ int main() {
 
     documentHeader header = getDocumentHeader(pFile, 0);
     
-    closeZgdbFile(pFile);
+    finish(pFile);
 
     return 0;
 }

@@ -3,6 +3,7 @@
 #define _FILE_OFFSET_BITS 64
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "index/list/freelist.h"
 #ifdef __linux__
 #include <sys/mman.h>
@@ -47,7 +48,7 @@ zgdbFile* loadOrCreateZgdbFile(const char* path);
 /*
  * Закрытие zgdb файла
  */
-uint8_t closeZgdbFile(zgdbFile* file);
+bool closeZgdbFile(zgdbFile* file);
 
 /*
  * Сохранение информации в заголовке на диск

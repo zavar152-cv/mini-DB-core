@@ -28,6 +28,6 @@ void insertDeadIndex(freeIndexesList* list, uint64_t indexOrder, uint64_t blockS
 
 uint64_t* findRelevantIndex(freeIndexesList* list, uint64_t reqSize);
 
-void printList(freeIndexesList* list);
+void printFreeIndexesList(freeIndexesList* list);
 
 #endif

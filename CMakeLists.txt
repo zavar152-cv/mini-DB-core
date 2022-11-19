@@ -7,9 +7,9 @@ include_directories("zgdb" "lib")
 
 set(GENERAL_SRC zgdb/format/zgdbfile.c zgdb/format/zgdbfile.h zgdb/index/zgdbindex.c zgdb/index/zgdbindex.h
         zgdb/data/zgdbdata.c zgdb/data/zgdbdata.h zgdb/index/list/freelist.c zgdb/index/list/freelist.h
-        zgdb/schema/zgdbschema.c zgdb/schema/zgdbschema.h zgdb/zgdb.c zgdb/zgdb.h)
+        zgdb/schema/zgdbschema.c zgdb/schema/zgdbschema.h zgdb/zgdb.c zgdb/zgdb.h zgdb/data/result/resultlist.c zgdb/data/result/resultlist.h)
 
-set(MAIN tests/root/manualattach.c)
+set(MAIN tests/tree/iteratortest.c)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mno-ms-bitfields")
 if (WIN32)
     set(WIN_SRC lib/mman-win32/mman.c lib/mman-win32/mman.h)

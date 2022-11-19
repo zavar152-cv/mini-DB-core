@@ -44,7 +44,7 @@ void insertNode(freeIndexesList* list, node* newNode) {
         return;
     }
 
-    node* temp = list->head->next;//TODO two dead error
+    node* temp = list->head->next;
     while ((temp->blockSize) < (newNode->blockSize))
         temp = temp->next;
 
@@ -67,7 +67,6 @@ void insertDeadIndex(freeIndexesList* list, uint64_t indexOrder, uint64_t blockS
     list->indexesCount++;
 }
 
-//TODO idea about block capacity
 uint64_t* findRelevantIndex(freeIndexesList* list, uint64_t reqSize) {
     if(list->tail == NULL || list->head == NULL)
         return NULL;
@@ -94,7 +93,7 @@ uint64_t* findRelevantIndex(freeIndexesList* list, uint64_t reqSize) {
     }
 }
 
-void printList(freeIndexesList* list) {
+void printFreeIndexesList(freeIndexesList* list) {
     node* temp = list->head;
     while (temp != NULL) {
         printf("%lu: %lu\n", temp->indexOrder, temp->blockSize);

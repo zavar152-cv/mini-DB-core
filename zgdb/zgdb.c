@@ -25,46 +25,54 @@ bool finish(zgdbFile* file) {
     return closeZgdbFile(file);
 }
 
-bool isRootDocument(documentHeader header) {
+bool isRootDocument0(documentHeader header) {
     return strcmp(header.name, "root") == 0 && header.indexAttached == 0 && header.attrCount == 0 && header.indexBrother == 0;
 }
 
-void findIf0(zgdbFile* file, uint64_t order, bool (* predicate)(document)) {
+void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predicate)(document), resultList* list) {
     documentHeader header = getDocumentHeader(file, order);
-    printf("Visited document: %s\n", header.name);
+    printf("Visited document: %s, ", header.name);
+    printf("parent: %llu\n", orderParent);
     document document;
-    if(header.attrCount == 0) {
-        document.header = header;
-        document.elementCount = 0;
-        document.elements = NULL;
-        document.isRoot = isRootDocument(header);
-    } else {
-        document.header = header;
-        document.elementCount = header.attrCount;
-        document.elements = NULL;//TODO reading elements
-        document.isRoot = isRootDocument(header);
-    }
+    document.header = header;
+    document.isRoot = isRootDocument0(header);
+    document.indexParent = orderParent;
+    document.elements = NULL;
+    //TODO reading elements
+//    if(header.attrCount == 0) {
+//        document.elements = NULL;
+//    } else {
+//        document.elements = NULL;
+//    }
 
     if((* predicate)(document)) {
-        printf("Found document ");
-        printf("%s\n", document.header.name);
+        printf("Found document: %s, ", document.header.name);
+        printf("parent: %llu\n", document.indexParent);
+        insertResult(list, document);
     }
 
     if(document.header.indexBrother == 0 && document.header.indexSon == 0) {
         return;
     } else if(document.header.indexBrother != 0 && document.header.indexSon != 0) {
-        findIf0(file, document.header.indexBrother, predicate);
-        findIf0(file, document.header.indexSon, predicate);
+        findIf0(file, document.header.indexBrother, document.indexParent, predicate, list);
+        findIf0(file, document.header.indexSon, document.header.indexAttached, predicate, list);
     } else if(document.header.indexBrother != 0 && document.header.indexSon == 0) {
-        findIf0(file, document.header.indexBrother, predicate);
+        findIf0(file, document.header.indexBrother, document.indexParent, predicate, list);
     } else if(document.header.indexBrother == 0 && document.header.indexSon != 0) {
-        findIf0(file, document.header.indexSon, predicate);
+        findIf0(file, document.header.indexSon, document.header.indexAttached, predicate, list);
     }
-
 }
 
-void findIfFromRoot(zgdbFile* file, bool (* predicate)(document)) {
-    findIf0(file, 0, predicate);
+resultList* findIfFromRoot(zgdbFile* file, bool (* predicate)(document)) {
+    resultList* pList = createResultList();
+    findIf0(file, 0, 0, predicate, pList);
+    return pList;
+}
+
+resultList* findIfFromDocument(zgdbFile* file, bool (* predicate)(document), document document) {
+    resultList* pList = createResultList();
+    findIf0(file, document.header.indexAttached, document.indexParent, predicate, pList);
+    return pList;
 }
 
 documentId generateId(off_t offset) {

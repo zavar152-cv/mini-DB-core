@@ -1,6 +1,7 @@
 #ifndef ZGDBPROJECT_ZGDBDATA_H
 #define ZGDBPROJECT_ZGDBDATA_H
 
+#include <string.h>
 #include <stdbool.h>
 
 #include "format/zgdbfile.h"
@@ -58,11 +59,11 @@ typedef struct documentHeader {
     uint64_t size: 40;
     uint64_t capacity: 40;
     uint64_t indexAttached: 40;
-    documentId id;
-    char name[13];
     uint64_t indexSon: 40;
     uint64_t indexBrother: 40;
     uint32_t attrCount;
+    char name[13];
+    documentId id;
 } documentHeader;
 
 /*
@@ -98,14 +99,18 @@ typedef struct element {
  * Структура для описания документа
  * header - заголовок документа
  * elements - указатель на массив элементов
- * elementCount - количество элементов
  * isRoot - является ли корнем
+ * indexParent - индекс родителя (у корня 0)
  */
-typedef struct document {
-    documentHeader header;
-    size_t elementCount;
-    bool isRoot;
+typedef struct document {//TODO remove elements
     element* elements;
+    bool isRoot;
+    uint64_t indexParent: 40;
+    documentHeader header;
 } document;
+
+bool isRootDocument(document document);
+
+bool hasChild(document document);
 
 #endif

@@ -43,6 +43,7 @@ typedef struct __attribute__((packed)) documentId {
 /*
  * Структура для заголовка документа
  * size - размер документа в байтах (5 байт)
+ * capacity - максимальный размер документа (5 байт)
  * indexAttached - порядковый номер привязанного индекса (5 байт)
  * id - идентификатор документа (12 байт)
  * name - имя документа (строчка длиной в 12 байт и нуль)
@@ -55,9 +56,10 @@ typedef struct __attribute__((packed)) documentId {
  */
 typedef struct documentHeader {
     uint64_t size: 40;
+    uint64_t capacity: 40;
     uint64_t indexAttached: 40;
     documentId id;
-    unsigned char name[13];
+    char name[13];
     uint64_t indexSon: 40;
     uint64_t indexBrother: 40;
     uint32_t attrCount;
@@ -97,10 +99,12 @@ typedef struct element {
  * header - заголовок документа
  * elements - указатель на массив элементов
  * elementCount - количество элементов
+ * isRoot - является ли корнем
  */
 typedef struct document {
     documentHeader header;
     size_t elementCount;
+    bool isRoot;
     element* elements;
 } document;
 

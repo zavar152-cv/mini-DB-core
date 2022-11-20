@@ -124,11 +124,10 @@ void createDocument(zgdbFile* file, const char* name, documentSchema schema, doc
     }
 
     if(file->freeList.indexesCount - file->freeList.newIndexesCount <= INDEX_INITIAL_CAPACITY/2) {
-        printf("Needed to expand indexes");
+        printf("Needed to expand indexes\n");
     }
 
     relevantIndexMeta* pRelevantIndexMeta = findRelevantIndex(&file->freeList, docSize);
-    printf("%lu\n", pRelevantIndexMeta->indexOrder);
     zgdbIndex indexToAttach = getIndex(file, pRelevantIndexMeta->indexOrder);
 
     off_t offset = file->zgdbHeader.fileSize;

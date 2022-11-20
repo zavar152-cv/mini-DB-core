@@ -73,7 +73,7 @@ typedef struct documentHeader {
  */
 typedef struct text {
     uint32_t size;
-    unsigned char* data;
+    char* data;
 } text;
 
 typedef struct document document;
@@ -98,12 +98,10 @@ typedef struct element {
 /*
  * Структура для описания документа
  * header - заголовок документа
- * elements - указатель на массив элементов
  * isRoot - является ли корнем
  * indexParent - индекс родителя (у корня 0)
  */
 typedef struct document {//TODO remove elements
-    element* elements;
     bool isRoot;
     uint64_t indexParent: 40;
     documentHeader header;
@@ -112,5 +110,7 @@ typedef struct document {//TODO remove elements
 bool isRootDocument(document document);
 
 bool hasChild(document document);
+
+bool hasBrother(document document);
 
 #endif

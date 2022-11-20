@@ -107,10 +107,21 @@ int main() {
     documentId id7 = _generateId(pFile->zgdbHeader.fileSize);
     documentHeader header7 = {.id = id7, .size = sizeof(documentHeader), .capacity = sizeof(documentHeader),
             .attrCount = 0, .indexAttached = 7, .indexBrother = 0,
-            .indexSon = 0, .name = "test7"};
+            .indexSon = 8, .name = "test7"};
 
     fwrite(&header7, sizeof(documentHeader), 1, pFile->file);
     attachIndexToBlock(pFile, 7, pFile->zgdbHeader.fileSize);
+    pFile->zgdbHeader.fileSize += sizeof(documentHeader);
+    saveHeader(pFile);
+
+    fseeko(pFile->file, pFile->zgdbHeader.fileSize, SEEK_SET);
+    documentId id8 = _generateId(pFile->zgdbHeader.fileSize);
+    documentHeader header8 = {.id = id8, .size = sizeof(documentHeader), .capacity = sizeof(documentHeader),
+            .attrCount = 0, .indexAttached = 8, .indexBrother = 0,
+            .indexSon = 0, .name = "test8"};
+
+    fwrite(&header8, sizeof(documentHeader), 1, pFile->file);
+    attachIndexToBlock(pFile, 8, pFile->zgdbHeader.fileSize);
     pFile->zgdbHeader.fileSize += sizeof(documentHeader);
     saveHeader(pFile);
 

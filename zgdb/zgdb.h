@@ -7,8 +7,11 @@
 #include "format/zgdbfile.h"
 #include "index/zgdbindex.h"
 #include "data/result/resultlist.h"
+#include "data/treestack/treestack.h"
 
 #define INDEX_INITIAL_CAPACITY 10
+#define INDEX_MULTIPLIER 2
+#define ELEMENTS_LOAD_CAPACITY 4
 
 zgdbFile* init(const char* path);
 
@@ -16,6 +19,8 @@ bool finish(zgdbFile* file);
 
 //TODO only for debug, will be removed
 documentHeader getDocumentHeader(zgdbFile* file, uint64_t order);
+
+void createDocument(zgdbFile* file, const char* name, documentSchema schema, document parent);
 
 resultList* findIfFromRoot(zgdbFile* file, bool (* predicate)(document));
 

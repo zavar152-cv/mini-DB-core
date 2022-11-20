@@ -57,6 +57,6 @@ bool killIndex(zgdbFile* file, uint64_t order) {//TODO check if index is alive
     zgdbIndex* pIndex = (zgdbIndex*) file->pIndexesMmap;
     pIndex[order].flag = INDEX_DEAD;
     msync(file->pIndexesMmap, file->zgdbHeader.indexCount * sizeof(zgdbIndex), MS_ASYNC);
-    insertDeadIndex(&(file->freeList), order, 534);//TODO blocksize is const
+    insertDeadIndex(&(file->freeList), order, 54);//TODO blocksize is const
     return true;
 }

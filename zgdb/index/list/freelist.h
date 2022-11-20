@@ -8,7 +8,7 @@ typedef struct node node;
 
 typedef struct node {
     uint64_t indexOrder: 40;
-    uint64_t blockSize: 40;
+    off_t blockSize: 40;
     node* next;
     node* prev;
 } node;
@@ -20,13 +20,18 @@ typedef struct freeIndexesList {
     uint64_t newIndexesCount: 40;
 } freeIndexesList;
 
+typedef struct relevantIndexMeta {
+    uint64_t indexOrder: 40;
+    off_t blockSize: 40;
+} relevantIndexMeta;
+
 freeIndexesList* createIndexesList();
 
 void insertNewIndex(freeIndexesList* list, uint64_t indexOrder);
 
-void insertDeadIndex(freeIndexesList* list, uint64_t indexOrder, uint64_t blockSize);
+void insertDeadIndex(freeIndexesList* list, uint64_t indexOrder, off_t blockSize);
 
-uint64_t* findRelevantIndex(freeIndexesList* list, uint64_t reqSize);
+relevantIndexMeta* findRelevantIndex(freeIndexesList* list, off_t reqSize);
 
 void printFreeIndexesList(freeIndexesList* list);
 

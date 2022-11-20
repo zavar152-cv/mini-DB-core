@@ -1,5 +1,8 @@
-
 #include "zgdb.h"
+
+bool checkName(document d) {
+    return strcmp(d.header.name, "test1") == 0;
+}
 
 int main() {
 #ifdef __linux__
@@ -25,16 +28,22 @@ int main() {
         printf("Flag: %d\n", getIndex(pFile, i).flag);
         printf("Offset: %llu\n\n", getIndex(pFile, i).offset);
     }
+    printFreeIndexesList(&(pFile->freeList));
 
-    printf("List before:\n");
-    printFreeIndexesList(&(pFile->freeList));
-    if(getIndex(pFile, 4).flag != INDEX_DEAD)
-        killIndex(pFile, 4);
-    //insertNewIndex(&(pFile->freeList), 1);
-    printf("List after:\n");
-    printFreeIndexesList(&(pFile->freeList));
+    document rootDoc = findIfFromRoot(pFile, isRootDocument)->head->document;
+    documentSchema schema = initSchema(6);
+    addBooleanToSchema(&schema, "bool1", 0);
+    addDoubleToSchema(&schema, "double1", 1.0);
+    addIntToSchema(&schema, "int1", 4);
+    addBooleanToSchema(&schema, "bool2", 0);
+    addDoubleToSchema(&schema, "double2", 1.0);
+    addIntToSchema(&schema, "int2", 4);
+    createDocument(pFile, "test1", schema, rootDoc);
+
+    document doc = findIfFromRoot(pFile, checkName)->head->document;
 
     finish(pFile);
 
     return 0;
 }
+

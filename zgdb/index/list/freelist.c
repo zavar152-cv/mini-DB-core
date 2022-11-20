@@ -11,7 +11,7 @@ freeIndexesList* createIndexesList() {
 }
 
 //TODO 40 bits check
-node* createNewNode(uint64_t indexOrder, uint64_t blockSize) {
+node* createNewNode(uint64_t indexOrder, off_t blockSize) {
     node* newNode = (node*) malloc(sizeof(node));
     newNode->blockSize = blockSize;
     newNode->indexOrder = indexOrder;
@@ -61,33 +61,63 @@ void insertNewIndex(freeIndexesList* list, uint64_t indexOrder) {
     list->indexesCount++;
 }
 
-void insertDeadIndex(freeIndexesList* list, uint64_t indexOrder, uint64_t blockSize) {
+void insertDeadIndex(freeIndexesList* list, uint64_t indexOrder, off_t blockSize) {
     node* newNode = createNewNode(indexOrder, blockSize);
     insertNode(list, newNode);
     list->indexesCount++;
 }
 
-uint64_t* findRelevantIndex(freeIndexesList* list, uint64_t reqSize) {
+relevantIndexMeta* findRelevantIndex(freeIndexesList* list, off_t reqSize) {
+    if(list->indexesCount == 1 && list->newIndexesCount == 1) {
+        relevantIndexMeta* result = malloc(sizeof(relevantIndexMeta));
+        result->indexOrder = list->head->indexOrder;
+        result->blockSize = list->head->blockSize;
+        free(list->head);
+        list->head = NULL;
+        list->tail = NULL;
+        list->newIndexesCount--;
+        list->indexesCount--;
+        return result;
+    }
+    if(list->indexesCount == 1 && list->newIndexesCount == 0) {
+        if(list->tail->blockSize >= reqSize) {
+            relevantIndexMeta* result = malloc(sizeof(relevantIndexMeta));
+            result->indexOrder = list->head->indexOrder;
+            result->blockSize = list->head->blockSize;
+            free(list->tail);
+            list->head = NULL;
+            list->tail = NULL;
+            list->indexesCount--;
+            return result;
+        } else {
+            return NULL;
+        }
+    }
     if(list->tail == NULL || list->head == NULL)
         return NULL;
     if(list->tail->blockSize >= reqSize) {
         node* pr = list->tail->prev;
         list->tail->prev = NULL;
         pr->next = NULL;
-        uint64_t* order = malloc(sizeof(uint64_t));
-        *order = list->tail->indexOrder;
+        relevantIndexMeta* result = malloc(sizeof(relevantIndexMeta));
+        result->indexOrder = list->head->indexOrder;
+        result->blockSize = list->head->blockSize;
         free(list->tail);
         list->tail = pr;
-        return order;
+        list->indexesCount--;
+        return result;
     } else if(list->head->blockSize == 0){
         node* pr = list->head->next;
         list->head->next = NULL;
         pr->prev = NULL;
-        uint64_t* order = malloc(sizeof(uint64_t));
-        *order = list->head->indexOrder;
+        relevantIndexMeta* result = malloc(sizeof(relevantIndexMeta));
+        result->indexOrder = list->head->indexOrder;
+        result->blockSize = list->head->blockSize;
         free(list->head);
         list->head = pr;
-        return order;
+        list->newIndexesCount--;
+        list->indexesCount--;
+        return result;
     } else {
         return NULL;
     }

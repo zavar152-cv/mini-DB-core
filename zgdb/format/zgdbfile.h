@@ -35,9 +35,9 @@ typedef struct zgdbHeader {
  */
 typedef struct zgdbFile {
     FILE* file;
-    zgdbHeader zgdbHeader;
     void* pIndexesMmap;
     freeIndexesList freeList;
+    zgdbHeader zgdbHeader;
 } zgdbFile;
 
 /*

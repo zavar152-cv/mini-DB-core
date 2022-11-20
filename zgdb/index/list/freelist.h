@@ -1,5 +1,6 @@
 #ifndef ZGDBPROJECT_FREELIST_H
 #define ZGDBPROJECT_FREELIST_H
+#define _FILE_OFFSET_BITS 64
 
 #include <stdio.h>
 #include <stdint.h>
@@ -8,7 +9,7 @@ typedef struct node node;
 
 typedef struct node {
     uint64_t indexOrder: 40;
-    off_t blockSize: 40;
+    off_t blockSize;
     node* next;
     node* prev;
 } node;
@@ -22,7 +23,7 @@ typedef struct freeIndexesList {
 
 typedef struct relevantIndexMeta {
     uint64_t indexOrder: 40;
-    off_t blockSize: 40;
+    off_t blockSize;
 } relevantIndexMeta;
 
 freeIndexesList* createIndexesList();

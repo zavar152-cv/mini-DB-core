@@ -1,7 +1,11 @@
 #include "zgdb.h"
 
 bool checkName(document d) {
-    return strcmp(d.header.name, "test1") == 0;
+    return strcmp(d.header.name, "test2") == 0;
+}
+
+bool checkName2(document d) {
+    return strcmp(d.header.name, "test3") == 0;
 }
 
 int main() {
@@ -38,10 +42,20 @@ int main() {
     addBooleanToSchema(&schema, "bool2", 0);
     addDoubleToSchema(&schema, "double2", 1.0);
     addIntToSchema(&schema, "int2", 4);
-    createDocument(pFile, "test1", schema, rootDoc);
+    createDocument(pFile, "test2", schema, rootDoc);
 
     document doc = findIfFromRoot(pFile, checkName)->head->document;
     printDocumentElements(pFile, doc);
+
+    documentSchema schema2 = initSchema(3);
+    addBooleanToSchema(&schema2, "bool1", 1);
+    addDoubleToSchema(&schema2, "double6", 1.5);
+    addIntToSchema(&schema2, "int9", -1);
+    createDocument(pFile, "test3", schema2, doc);
+
+    document doc2 = findIfFromRoot(pFile, checkName2)->head->document;
+    printDocumentElements(pFile, doc2);
+
     finish(pFile);
 
     return 0;

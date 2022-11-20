@@ -146,7 +146,7 @@ void createDocument(zgdbFile* file, const char* name, documentSchema schema, doc
     fseeko(file->file, offset, SEEK_SET);
     documentId id = generateId(offset);
     documentHeader header = {.id = id, .size = docSize, .capacity = pRelevantIndexMeta->blockSize,
-            .attrCount = schema.capacity, .indexAttached = pRelevantIndexMeta->indexOrder, .indexBrother = 0,
+            .attrCount = schema.capacity, .indexAttached = pRelevantIndexMeta->indexOrder, .indexBrother = parentHeader.indexSon,
             .indexSon = 0};
     strcpy(header.name, name);
     attachIndexToBlock(file, pRelevantIndexMeta->indexOrder, offset);
@@ -171,7 +171,7 @@ void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predi
     while (next != NULL) {
         documentHeader header = getDocumentHeader(file, next->order);
         printf("Visited document: %s, ", header.name);
-        printf("parent: %llu\n", next->orderParent);
+        printf("parent: %llu (index: %llu)\n", next->orderParent, next->order);
         document document;
         document.header = header;
         document.isRoot = isRootDocument0(header);

@@ -41,7 +41,7 @@ int main() {
     createDocument(pFile, "test1", schema, rootDoc);
 
     document doc = findIfFromRoot(pFile, checkName)->head->document;
-
+    printDocumentElements(pFile, doc);
     finish(pFile);
 
     return 0;

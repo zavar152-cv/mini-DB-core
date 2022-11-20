@@ -22,6 +22,8 @@ documentHeader getDocumentHeader(zgdbFile* file, uint64_t order);
 
 void createDocument(zgdbFile* file, const char* name, documentSchema schema, document parent);
 
+void printDocumentElements(zgdbFile* file, document document);
+
 resultList* findIfFromRoot(zgdbFile* file, bool (* predicate)(document));
 
 resultList* findIfFromDocument(zgdbFile* file, bool (* predicate)(document), document document);

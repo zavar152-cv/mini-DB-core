@@ -52,10 +52,9 @@ off_t writeElement(zgdbFile* file, element cur) {
         case TYPE_BOOLEAN:
             fwrite(&cur.booleanValue, sizeof(uint8_t), 1, file->file);
             break;
-        case TYPE_INT: {
+        case TYPE_INT:
             fwrite(&cur.integerValue, sizeof(int32_t), 1, file->file);
             break;
-        }
         case TYPE_DOUBLE:
             fwrite(&cur.doubleValue, sizeof(double), 1, file->file);
             break;
@@ -87,6 +86,33 @@ element* readElement(zgdbFile* file) {
             break;
     }
     return cur;
+}
+
+void printDocumentElements(zgdbFile* file, document document) {
+    zgdbIndex index = getIndex(file, document.header.indexAttached);
+    fseeko(file->file, index.offset, SEEK_SET);
+    fseeko(file->file, sizeof(documentHeader), SEEK_CUR);
+    for (int i = 0; i < document.header.attrCount; ++i) {
+        element* pElement = readElement(file);
+        printf("EName: %s\n", pElement->key);
+        printf("EType: %hhu\n", pElement->type);
+        printf("EValue: ");
+        switch (pElement->type) {
+            case TYPE_BOOLEAN:
+                printf("%hhu\n", pElement->booleanValue);
+                break;
+            case TYPE_INT:
+                printf("%d\n", pElement->integerValue);
+                break;
+            case TYPE_DOUBLE:
+                printf("%f\n", pElement->doubleValue);
+                break;
+            case TYPE_TEXT:
+                printf("%s\n", pElement->textValue.data);
+                break;
+        }
+        printf("\n");
+    }
 }
 
 void createDocument(zgdbFile* file, const char* name, documentSchema schema, document parent) {

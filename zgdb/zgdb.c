@@ -164,6 +164,7 @@ void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predi
     next->orderParent = orderParent;
     next->order = order;
     documentHeader header;
+    document document;
 #if defined(__MINGW32__) && defined(DEBUG_INFO)
     PROCESS_MEMORY_COUNTERS_EX pmc;
     SIZE_T physMemUsedByMe;
@@ -172,7 +173,6 @@ void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predi
         header = getDocumentHeader(file, next->order);
         printf("Visited document: %s, ", header.name);
         printf("parent: %llu (index: %llu)\n", next->orderParent, next->order);
-        document document;
         document.header = header;
         document.isRoot = isRootDocument0(header);
         document.indexParent = next->orderParent;

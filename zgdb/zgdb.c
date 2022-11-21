@@ -163,12 +163,13 @@ void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predi
     nodeEntry* next = malloc(sizeof(nodeEntry));
     next->orderParent = orderParent;
     next->order = order;
+    documentHeader header;
 #if defined(__MINGW32__) && defined(DEBUG_INFO)
     PROCESS_MEMORY_COUNTERS_EX pmc;
     SIZE_T physMemUsedByMe;
 #endif
     while (next != NULL) {
-        documentHeader header = getDocumentHeader(file, next->order);
+        header = getDocumentHeader(file, next->order);
         printf("Visited document: %s, ", header.name);
         printf("parent: %llu (index: %llu)\n", next->orderParent, next->order);
         document document;

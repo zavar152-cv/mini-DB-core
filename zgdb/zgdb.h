@@ -22,7 +22,7 @@ documentHeader getDocumentHeader(zgdbFile* file, uint64_t order);
 
 void createDocument(zgdbFile* file, const char* name, documentSchema schema, document parent);
 
-void deleteDocument(zgdbFile* file, document document);
+void deleteDocument(zgdbFile* file, document doc);
 
 void forEachDocument(zgdbFile* file, void (* consumer)(document, zgdbFile*), document start);
 

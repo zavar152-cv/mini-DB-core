@@ -77,6 +77,9 @@ int main() {
     destroyResultList(&list);
     printDocumentElements(pFile, doc2);
 
+    list = findIfFromRoot(pFile, checkName);
+    doc = list.head->document;
+    destroyResultList(&list);
     printFreeIndexesList(&(pFile->freeList));
     deleteDocument(pFile, doc);
     printf("Deleted\n");
@@ -98,6 +101,19 @@ int main() {
     destroyResultList(&list);
 
     forEachDocument(pFile, print, rootDoc);
+
+    printFreeIndexesList(&(pFile->freeList));
+    list = findIfFromRoot(pFile, isRootDocument);
+    rootDoc = list.head->document;
+    destroyResultList(&list);
+    schema = initSchema(1);
+    addBooleanToSchema(&schema, "bool1", 0);
+    createDocument(pFile, "new1", schema, rootDoc);
+
+    printf("After new1\n");
+    printFreeIndexesList(&(pFile->freeList));
+
+    list = findIfFromRoot(pFile, isRootDocument);
 
     finish(pFile);
 

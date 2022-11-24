@@ -169,11 +169,11 @@ void del(document document, zgdbFile* file) {
     }
 }
 
-void deleteDocument(zgdbFile* file, document document) {
-    documentHeader parentHeader = getDocumentHeader(file, document.indexParent);
-
-    if(parentHeader.indexSon == document.header.indexAttached) {
-        parentHeader.indexSon = 0;
+void deleteDocument(zgdbFile* file, document doc) {
+    documentHeader parentHeader = getDocumentHeader(file, doc.indexParent);
+    
+    if(parentHeader.indexSon == doc.header.indexAttached) {
+        parentHeader.indexSon = doc.header.indexBrother;
         off_t i = getIndex(file, parentHeader.indexAttached).offset;
         fseeko(file->file, i, SEEK_SET);
         fwrite(&parentHeader, sizeof(documentHeader), 1, file->file);
@@ -181,7 +181,7 @@ void deleteDocument(zgdbFile* file, document document) {
         documentHeader temp = getDocumentHeader(file, parentHeader.indexSon);
         documentHeader prev = temp;
         while(temp.indexBrother != 0) {
-            if(temp.indexAttached == document.header.indexAttached) {
+            if(temp.indexAttached == doc.header.indexAttached) {
                 break;
             }
             temp = getDocumentHeader(file, temp.indexBrother);
@@ -192,7 +192,16 @@ void deleteDocument(zgdbFile* file, document document) {
         fseeko(file->file, i, SEEK_SET);
         fwrite(&prev, sizeof(documentHeader), 1, file->file);
     }
-    forEachDocument(file, del, document);
+
+    if(doc.header.indexSon != 0) {
+        document child;
+        documentHeader childHeader = getDocumentHeader(file, doc.header.indexSon);
+        child.header = childHeader;
+        child.isRoot = isRootDocument0(childHeader);
+        child.indexParent = doc.indexParent;
+        forEachDocument(file, del, child);
+    }
+    del(doc, file);
 }
 
 void forEachDocument(zgdbFile* file, void (* consumer)(document, zgdbFile*), document start) {
@@ -207,7 +216,7 @@ void forEachDocument(zgdbFile* file, void (* consumer)(document, zgdbFile*), doc
 
     while (!stop) {
         header = getDocumentHeader(file, next.order);
-        printf("Visited document: %s, ", header.name);
+        printf("Visited document: %s, size: %llu, ", header.name, header.size);
         printf("parent: %llu (index: %llu)\n", next.orderParent, next.order);
         document.header = header;
         document.isRoot = isRootDocument0(header);

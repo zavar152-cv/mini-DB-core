@@ -49,7 +49,7 @@ int main() {
     finish(pFile);
 
 #ifdef __linux__
-    zgdbFile* pFile = init("/tmp/test.zgdb");
+    pFile = init("/tmp/test.zgdb");
 #endif
 #ifdef __MINGW32__
     pFile = init("D:/test.zgdb");

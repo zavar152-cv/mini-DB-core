@@ -117,7 +117,7 @@ void printDocumentElements(zgdbFile* file, document document) {
 }
 
 void createDocument(zgdbFile* file, const char* name, documentSchema schema, document parent) {
-    documentHeader parentHeader = parent.header;
+    documentHeader parentHeader = getDocumentHeader(file, parent.header.indexAttached);
     off_t docSize = sizeof(documentHeader);
     if(schema.capacity != schema.size) {
         printf("Invalid schema\n");
@@ -145,13 +145,15 @@ void createDocument(zgdbFile* file, const char* name, documentSchema schema, doc
     }
     fseeko(file->file, offset, SEEK_SET);
     documentId id = generateId(offset);
-    documentHeader header = {.id = id, .size = docSize, .capacity = pRelevantIndexMeta->blockSize,
+    uint64_t cap = pRelevantIndexMeta->blockSize == 0 ? docSize : pRelevantIndexMeta->blockSize;
+    documentHeader header = {.id = id, .size = docSize, .capacity = cap,
             .attrCount = schema.capacity, .indexAttached = pRelevantIndexMeta->indexOrder, .indexBrother = parentHeader.indexSon,
             .indexSon = 0};
     strcpy(header.name, name);
     attachIndexToBlock(file, pRelevantIndexMeta->indexOrder, offset);
     fwrite(&header, sizeof(documentHeader), 1, file->file);
-    file->zgdbHeader.fileSize += docSize;
+    if(pRelevantIndexMeta->blockSize == 0)
+        file->zgdbHeader.fileSize += docSize;
     saveHeader(file);
 
     parentHeader.indexSon = pRelevantIndexMeta->indexOrder;
@@ -160,52 +162,83 @@ void createDocument(zgdbFile* file, const char* name, documentSchema schema, doc
     free(pRelevantIndexMeta);
 }
 
-void deleteDocument(zgdbFile* file, document document) {
-
+void del(document document, zgdbFile* file) {
+    if(!document.isRoot) {
+        killIndex(file, document.header.indexAttached);
+        insertDeadIndex(&(file->freeList), document.header.indexAttached, document.header.capacity);//TODO blocksize is const
+    }
 }
 
-void forEachDocument(zgdbFile* file, void (* consumer)(document), document start) {
+void deleteDocument(zgdbFile* file, document document) {
+    documentHeader parentHeader = getDocumentHeader(file, document.indexParent);
+
+    if(parentHeader.indexSon == document.header.indexAttached) {
+        parentHeader.indexSon = 0;
+        off_t i = getIndex(file, parentHeader.indexAttached).offset;
+        fseeko(file->file, i, SEEK_SET);
+        fwrite(&parentHeader, sizeof(documentHeader), 1, file->file);
+    } else {
+        documentHeader temp = getDocumentHeader(file, parentHeader.indexSon);
+        documentHeader prev = temp;
+        while(temp.indexBrother != 0) {
+            if(temp.indexAttached == document.header.indexAttached) {
+                break;
+            }
+            temp = getDocumentHeader(file, temp.indexBrother);
+            prev = temp;
+        }
+        prev.indexBrother = temp.indexBrother;
+        off_t i = getIndex(file, prev.indexAttached).offset;
+        fseeko(file->file, i, SEEK_SET);
+        fwrite(&prev, sizeof(documentHeader), 1, file->file);
+    }
+    forEachDocument(file, del, document);
+}
+
+void forEachDocument(zgdbFile* file, void (* consumer)(document, zgdbFile*), document start) {
     treeStack* pStack = createStack();
-    nodeEntry* next = malloc(sizeof(nodeEntry));
-    next->orderParent = start.indexParent;
-    next->order = start.header.indexAttached;
+    nodeEntry next;
+    next.orderParent = start.indexParent;
+    next.order = start.header.indexAttached;
     documentHeader header;
     document document;
     nodeEntry temp;
+    bool stop = false;
 
-    while (next != NULL) {
-        header = getDocumentHeader(file, next->order);
+    while (!stop) {
+        header = getDocumentHeader(file, next.order);
         printf("Visited document: %s, ", header.name);
-        printf("parent: %llu (index: %llu)\n", next->orderParent, next->order);
+        printf("parent: %llu (index: %llu)\n", next.orderParent, next.order);
         document.header = header;
         document.isRoot = isRootDocument0(header);
-        document.indexParent = next->orderParent;
+        document.indexParent = next.orderParent;
         //TODO reading elements
 
-        (*consumer) (document);
+        (*consumer) (document, file);
 
         if (document.header.indexBrother == 0 && document.header.indexSon == 0) {
             if (peek(pStack) == NULL) {
-                next = NULL;
+                stop = true;
             } else {
-                next = pop(pStack);
+                nodeEntry* pEntry = pop(pStack);
+                next.order = pEntry->order;
+                next.orderParent = pEntry->orderParent;
             }
         } else if (document.header.indexBrother != 0 && document.header.indexSon != 0) {
-            next->order = document.header.indexBrother;
-            next->orderParent = document.indexParent;
+            next.order = document.header.indexBrother;
+            next.orderParent = document.indexParent;
             temp.order = document.header.indexSon;
             temp.orderParent = document.header.indexAttached;
             push(pStack, temp);
         } else if (document.header.indexBrother != 0 && document.header.indexSon == 0) {
-            next->order = document.header.indexBrother;
-            next->orderParent = document.indexParent;
+            next.order = document.header.indexBrother;
+            next.orderParent = document.indexParent;
         } else if (document.header.indexBrother == 0 && document.header.indexSon != 0) {
-            next->order = document.header.indexSon;
-            next->orderParent = document.header.indexAttached;
+            next.order = document.header.indexSon;
+            next.orderParent = document.header.indexAttached;
         }
     }
     deleteStack(&pStack);
-    free(next);
 }
 
 void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predicate)(document), resultList* list) {

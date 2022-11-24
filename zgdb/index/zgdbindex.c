@@ -50,13 +50,14 @@ bool attachIndexToBlock(zgdbFile* file, uint64_t order, off_t blockOffset) {
     return true;
 }
 
-bool killIndex(zgdbFile* file, uint64_t order) {//TODO check if index is alive
+bool killIndex(zgdbFile* file, uint64_t order) {
     if (order > file->zgdbHeader.indexCount - 1) {
         return false;
     }
     zgdbIndex* pIndex = (zgdbIndex*) file->pIndexesMmap;
+    if(pIndex[order].flag != INDEX_ALIVE)
+        return false;
     pIndex[order].flag = INDEX_DEAD;
     msync(file->pIndexesMmap, file->zgdbHeader.indexCount * sizeof(zgdbIndex), MS_ASYNC);
-    insertDeadIndex(&(file->freeList), order, 54);//TODO blocksize is const
     return true;
 }

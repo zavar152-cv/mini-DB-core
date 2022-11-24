@@ -24,7 +24,7 @@ void createDocument(zgdbFile* file, const char* name, documentSchema schema, doc
 
 void deleteDocument(zgdbFile* file, document document);
 
-void forEachDocument(zgdbFile* file, void (* consumer)(document), document start);
+void forEachDocument(zgdbFile* file, void (* consumer)(document, zgdbFile*), document start);
 
 void printDocumentElements(zgdbFile* file, document document);
 

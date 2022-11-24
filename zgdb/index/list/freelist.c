@@ -20,7 +20,7 @@ void destroyIndexesList(freeIndexesList* list) {
 }
 
 //TODO 40 bits check
-node* createNewNode(uint64_t indexOrder, off_t blockSize) {
+node* createNewNode(uint64_t indexOrder, uint64_t blockSize) {
     node* newNode = (node*) malloc(sizeof(node));
     newNode->blockSize = blockSize;
     newNode->indexOrder = indexOrder;
@@ -70,13 +70,13 @@ void insertNewIndex(freeIndexesList* list, uint64_t indexOrder) {
     list->indexesCount++;
 }
 
-void insertDeadIndex(freeIndexesList* list, uint64_t indexOrder, off_t blockSize) {
+void insertDeadIndex(freeIndexesList* list, uint64_t indexOrder, uint64_t blockSize) {
     node* newNode = createNewNode(indexOrder, blockSize);
     insertNode(list, newNode);
     list->indexesCount++;
 }
 
-relevantIndexMeta* findRelevantIndex(freeIndexesList* list, off_t reqSize) {
+relevantIndexMeta* findRelevantIndex(freeIndexesList* list, uint64_t reqSize) {
     if(list->indexesCount == 1 && list->newIndexesCount == 1) {
         relevantIndexMeta* result = malloc(sizeof(relevantIndexMeta));
         result->indexOrder = list->head->indexOrder;
@@ -91,8 +91,8 @@ relevantIndexMeta* findRelevantIndex(freeIndexesList* list, off_t reqSize) {
     if(list->indexesCount == 1 && list->newIndexesCount == 0) {
         if(list->tail->blockSize >= reqSize) {
             relevantIndexMeta* result = malloc(sizeof(relevantIndexMeta));
-            result->indexOrder = list->head->indexOrder;
-            result->blockSize = list->head->blockSize;
+            result->indexOrder = list->tail->indexOrder;
+            result->blockSize = list->tail->blockSize;
             free(list->tail);
             list->head = NULL;
             list->tail = NULL;
@@ -109,8 +109,8 @@ relevantIndexMeta* findRelevantIndex(freeIndexesList* list, off_t reqSize) {
         list->tail->prev = NULL;
         pr->next = NULL;
         relevantIndexMeta* result = malloc(sizeof(relevantIndexMeta));
-        result->indexOrder = list->head->indexOrder;
-        result->blockSize = list->head->blockSize;
+        result->indexOrder = list->tail->indexOrder;
+        result->blockSize = list->tail->blockSize;
         free(list->tail);
         list->tail = pr;
         list->indexesCount--;

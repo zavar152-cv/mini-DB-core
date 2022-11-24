@@ -10,7 +10,7 @@ set(GENERAL_SRC zgdb/format/zgdbfile.c zgdb/format/zgdbfile.h zgdb/index/zgdbind
         zgdb/schema/zgdbschema.c zgdb/schema/zgdbschema.h zgdb/zgdb.c zgdb/zgdb.h zgdb/data/result/resultlist.c zgdb/data/result/resultlist.h
         zgdb/data/treestack/treestack.c zgdb/data/treestack/treestack.h)
 
-set(MAIN tests/tree/createdoc.c)
+set(MAIN tests/tree/deletetest.c)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mno-ms-bitfields")
 if (WIN32)
     set(WIN_SRC lib/mman-win32/mman.c lib/mman-win32/mman.h)

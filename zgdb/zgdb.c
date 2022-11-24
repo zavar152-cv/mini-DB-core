@@ -44,6 +44,28 @@ documentId generateId(off_t offset) {
     return id;
 }
 
+off_t getElementSize(element cur) {
+    off_t s = 0;
+    s += sizeof(uint8_t);
+    s += 13 * sizeof(char);
+    switch (cur.type) {
+        case TYPE_BOOLEAN:
+            s += sizeof(uint8_t);
+            break;
+        case TYPE_INT:
+            s += sizeof(int32_t);
+            break;
+        case TYPE_DOUBLE:
+            s += sizeof(double);
+            break;
+        case TYPE_TEXT:
+            s += sizeof(uint32_t);
+            s += (off_t) (cur.textValue.size * sizeof(char));
+            break;
+    }
+    return s;
+}
+
 off_t writeElement(zgdbFile* file, element cur) {
     off_t t = ftello(file->file);
     fwrite(&cur.type, sizeof(uint8_t), 1, file->file);
@@ -128,6 +150,11 @@ void createDocument(zgdbFile* file, const char* name, documentSchema schema, doc
         printf("Needed to expand indexes\n");
     }
 
+    for (int i = 0; i < schema.capacity; ++i) {
+        element cur = schema.elements[i];
+        docSize += getElementSize(cur);
+    }
+
     relevantIndexMeta* pRelevantIndexMeta = findRelevantIndex(&file->freeList, docSize);
     zgdbIndex indexToAttach = getIndex(file, pRelevantIndexMeta->indexOrder);
 
@@ -141,7 +168,7 @@ void createDocument(zgdbFile* file, const char* name, documentSchema schema, doc
     fseeko(file->file, sizeof(documentHeader), SEEK_CUR);
     for (int i = 0; i < schema.capacity; ++i) {
         element cur = schema.elements[i];
-        docSize += writeElement(file, cur);
+        writeElement(file, cur);
     }
     fseeko(file->file, offset, SEEK_SET);
     documentId id = generateId(offset);

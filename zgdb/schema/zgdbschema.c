@@ -10,6 +10,10 @@ documentSchema initSchema(size_t capacity) {
     return schema;
 }
 
+void destroySchema(documentSchema* schema) {
+    free(schema->elements);
+}
+
 void addIntToSchema(documentSchema* schema, char* key, int32_t initValue) {
     schema->elements[schema->size].type = TYPE_INT;
     strcpy(schema->elements[schema->size].key, key);

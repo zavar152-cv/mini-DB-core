@@ -26,7 +26,9 @@ typedef struct relevantIndexMeta {
     off_t blockSize;
 } relevantIndexMeta;
 
-freeIndexesList* createIndexesList();
+freeIndexesList createIndexesList();
+
+void destroyIndexesList(freeIndexesList* list);
 
 void insertNewIndex(freeIndexesList* list, uint64_t indexOrder);
 

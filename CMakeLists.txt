@@ -18,6 +18,7 @@ if (WIN32)
 endif (WIN32)
 
 if (UNIX)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -fsanitize=address")
     add_executable(ZGDBProject ${GENERAL_SRC} ${MAIN})
 endif (UNIX)
 

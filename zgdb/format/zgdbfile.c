@@ -76,25 +76,26 @@ zgdbFile* loadOrCreateZgdbFile(const char* path) {
         return zgdb;
     } else {
         FILE* file = fopen(path, "wb+");
-        zgdbHeader* header = (zgdbHeader*) malloc(sizeof(zgdbHeader));
-        header->indexCount = 0;
-        header->freeListOffset = 0;
-        header->zgdbType = getZgdbFormat();
-        header->betweenSpace = 0;
-        header->version = 1;
-        header->fileSize = sizeof(zgdbHeader);
+        zgdbHeader header;
+        header.indexCount = 0;
+        header.freeListOffset = 0;
+        header.zgdbType = getZgdbFormat();
+        header.betweenSpace = 0;
+        header.version = 1;
+        header.fileSize = sizeof(zgdbHeader);
         fseeko(file, 0, SEEK_SET);
-        fwrite(header, sizeof(zgdbHeader), 1, file);
+        fwrite(&header, sizeof(zgdbHeader), 1, file);
         zgdbFile* zgdb = (zgdbFile*) malloc(sizeof(zgdbFile));
-        zgdb->zgdbHeader = *header;
+        zgdb->zgdbHeader = header;
         zgdb->file = file;
-        zgdb->freeList = *createIndexesList();
+        zgdb->freeList = createIndexesList();
         return zgdb;
     }
 }
 
 bool closeZgdbFile(zgdbFile* file) {
     writeFreelist(file);
+    destroyIndexesList(&file->freeList);
     int i = fclose(file->file);
     free(file);
     return i == 0 ? true : false;

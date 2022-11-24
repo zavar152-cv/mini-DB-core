@@ -26,8 +26,8 @@ typedef struct zgdbHeader {
     uint8_t version;
     uint64_t indexCount: 40;
     uint8_t betweenSpace;
-    off_t fileSize;
     uint64_t freeListOffset;
+    off_t fileSize;
 } zgdbHeader;
 
 /*

@@ -21,7 +21,9 @@ typedef struct resultList {
     uint64_t size: 40;
 } resultList;
 
-resultList* createResultList();
+resultList createResultList();
+
+void destroyResultList(resultList* list);
 
 void insertResult(resultList* list, document document);
 

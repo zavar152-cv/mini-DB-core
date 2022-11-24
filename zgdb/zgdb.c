@@ -111,6 +111,7 @@ void printDocumentElements(zgdbFile* file, document document) {
                 printf("%s\n", pElement->textValue.data);
                 break;
         }
+        free(pElement);
         printf("\n");
     }
 }
@@ -156,19 +157,22 @@ void createDocument(zgdbFile* file, const char* name, documentSchema schema, doc
     parentHeader.indexSon = pRelevantIndexMeta->indexOrder;
     fseeko(file->file, getIndex(file, parent.header.indexAttached).offset, SEEK_SET);
     fwrite(&parentHeader, sizeof(documentHeader), 1, file->file);
+    free(pRelevantIndexMeta);
 }
 
-void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predicate)(document), resultList* list) {
+void deleteDocument(zgdbFile* file, document document) {
+
+}
+
+void forEachDocument(zgdbFile* file, void (* consumer)(document), document start) {
     treeStack* pStack = createStack();
     nodeEntry* next = malloc(sizeof(nodeEntry));
-    next->orderParent = orderParent;
-    next->order = order;
+    next->orderParent = start.indexParent;
+    next->order = start.header.indexAttached;
     documentHeader header;
     document document;
-#if defined(__MINGW32__) && defined(DEBUG_INFO)
-    PROCESS_MEMORY_COUNTERS_EX pmc;
-    SIZE_T physMemUsedByMe;
-#endif
+    nodeEntry temp;
+
     while (next != NULL) {
         header = getDocumentHeader(file, next->order);
         printf("Visited document: %s, ", header.name);
@@ -178,11 +182,7 @@ void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predi
         document.indexParent = next->orderParent;
         //TODO reading elements
 
-        if ((*predicate)(document)) {
-            printf("Found document: %s, ", document.header.name);
-            printf("parent: %llu\n", document.indexParent);
-            insertResult(list, document);
-        }
+        (*consumer) (document);
 
         if (document.header.indexBrother == 0 && document.header.indexSon == 0) {
             if (peek(pStack) == NULL) {
@@ -193,7 +193,8 @@ void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predi
         } else if (document.header.indexBrother != 0 && document.header.indexSon != 0) {
             next->order = document.header.indexBrother;
             next->orderParent = document.indexParent;
-            nodeEntry temp = {.order = document.header.indexSon, .orderParent = document.header.indexAttached};
+            temp.order = document.header.indexSon;
+            temp.orderParent = document.header.indexAttached;
             push(pStack, temp);
         } else if (document.header.indexBrother != 0 && document.header.indexSon == 0) {
             next->order = document.header.indexBrother;
@@ -201,6 +202,60 @@ void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predi
         } else if (document.header.indexBrother == 0 && document.header.indexSon != 0) {
             next->order = document.header.indexSon;
             next->orderParent = document.header.indexAttached;
+        }
+    }
+    deleteStack(&pStack);
+    free(next);
+}
+
+void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predicate)(document), resultList* list) {
+    treeStack* pStack = createStack();
+    nodeEntry next;
+    next.orderParent = orderParent;
+    next.order = order;
+    documentHeader header;
+    document document;
+    nodeEntry temp;
+    bool stop = false;
+#if defined(__MINGW32__) && defined(DEBUG_INFO)
+    PROCESS_MEMORY_COUNTERS_EX pmc;
+    SIZE_T physMemUsedByMe;
+#endif
+    while (!stop) {
+        header = getDocumentHeader(file, next.order);
+        printf("Visited document: %s, ", header.name);
+        printf("parent: %llu (index: %llu)\n", next.orderParent, next.order);
+        document.header = header;
+        document.isRoot = isRootDocument0(header);
+        document.indexParent = next.orderParent;
+        //TODO reading elements
+
+        if ((*predicate)(document)) {
+            printf("Found document: %s, ", document.header.name);
+            printf("parent: %llu\n", document.indexParent);
+            insertResult(list, document);
+        }
+
+        if (document.header.indexBrother == 0 && document.header.indexSon == 0) {
+            if (peek(pStack) == NULL) {
+                stop = true;
+            } else {
+                nodeEntry* pEntry = pop(pStack);
+                next.order = pEntry->order;
+                next.orderParent = pEntry->orderParent;
+            }
+        } else if (document.header.indexBrother != 0 && document.header.indexSon != 0) {
+            next.order = document.header.indexBrother;
+            next.orderParent = document.indexParent;
+            temp.order = document.header.indexSon;
+            temp.orderParent = document.header.indexAttached;
+            push(pStack, temp);
+        } else if (document.header.indexBrother != 0 && document.header.indexSon == 0) {
+            next.order = document.header.indexBrother;
+            next.orderParent = document.indexParent;
+        } else if (document.header.indexBrother == 0 && document.header.indexSon != 0) {
+            next.order = document.header.indexSon;
+            next.orderParent = document.header.indexAttached;
         }
 #if defined(__MINGW32__) && defined(DEBUG_INFO)
         GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
@@ -211,8 +266,7 @@ void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predi
     deleteStack(&pStack);
 }
 
-void
-findIf0Recursive(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predicate)(document), resultList* list) {
+void findIf0Recursive(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predicate)(document), resultList* list) {
 #ifdef __MINGW32__
     PROCESS_MEMORY_COUNTERS_EX pmc;
     SIZE_T physMemUsedByMe;
@@ -247,15 +301,15 @@ findIf0Recursive(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* p
     }
 }
 
-resultList* findIfFromRoot(zgdbFile* file, bool (* predicate)(document)) {
-    resultList* pList = createResultList();
-    findIf0(file, 0, 0, predicate, pList);
+resultList findIfFromRoot(zgdbFile* file, bool (* predicate)(document)) {
+    resultList pList = createResultList();
+    findIf0(file, 0, 0, predicate, &pList);
     return pList;
 }
 
-resultList* findIfFromDocument(zgdbFile* file, bool (* predicate)(document), document document) {
-    resultList* pList = createResultList();
-    findIf0(file, document.header.indexAttached, document.indexParent, predicate, pList);
+resultList findIfFromDocument(zgdbFile* file, bool (* predicate)(document), document document) {
+    resultList pList = createResultList();
+    findIf0(file, document.header.indexAttached, document.indexParent, predicate, &pList);
     return pList;
 }
 

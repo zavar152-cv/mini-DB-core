@@ -21,6 +21,8 @@ typedef struct documentSchema {
  */
 documentSchema initSchema(size_t capacity);
 
+void destroySchema(documentSchema* schema);
+
 /*
  * Функции для расширения схемы
  */

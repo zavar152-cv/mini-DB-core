@@ -34,7 +34,9 @@ int main() {
     }
     printFreeIndexesList(&(pFile->freeList));
 
-    document rootDoc = findIfFromRoot(pFile, isRootDocument)->head->document;
+    resultList list = findIfFromRoot(pFile, isRootDocument);
+    document rootDoc = list.head->document;
+    destroyResultList(&list);
     documentSchema schema = initSchema(6);
     addBooleanToSchema(&schema, "bool1", 0);
     addDoubleToSchema(&schema, "double1", 1.0);
@@ -43,8 +45,11 @@ int main() {
     addDoubleToSchema(&schema, "double2", 1.0);
     addIntToSchema(&schema, "int2", 4);
     createDocument(pFile, "test2", schema, rootDoc);
+    destroySchema(&schema);
 
-    document doc = findIfFromRoot(pFile, checkName)->head->document;
+    list = findIfFromRoot(pFile, checkName);
+    document doc = list.head->document;
+    destroyResultList(&list);
     printDocumentElements(pFile, doc);
 
     documentSchema schema2 = initSchema(3);
@@ -52,8 +57,11 @@ int main() {
     addDoubleToSchema(&schema2, "double6", 1.5);
     addIntToSchema(&schema2, "int9", -1);
     createDocument(pFile, "test3", schema2, doc);
+    destroySchema(&schema2);
 
-    document doc2 = findIfFromRoot(pFile, checkName2)->head->document;
+    list = findIfFromRoot(pFile, checkName2);
+    document doc2 = list.head->document;
+    destroyResultList(&list);
     printDocumentElements(pFile, doc2);
 
     finish(pFile);

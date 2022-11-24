@@ -1,13 +1,22 @@
 #include <stdlib.h>
 #include "freelist.h"
 
-freeIndexesList* createIndexesList() {
-    freeIndexesList* list = (freeIndexesList*) malloc(sizeof(freeIndexesList));
-    list->head = NULL;
-    list->tail = NULL;
-    list->indexesCount = 0;
-    list->newIndexesCount = 0;
+freeIndexesList createIndexesList() {
+    freeIndexesList list;
+    list.head = NULL;
+    list.tail = NULL;
+    list.indexesCount = 0;
+    list.newIndexesCount = 0;
     return list;
+}
+
+void destroyIndexesList(freeIndexesList* list) {
+    node* temp;
+    while (list->head != NULL) {
+        temp = list->head;
+        list->head = list->head->next;
+        free(temp);
+    }
 }
 
 //TODO 40 bits check

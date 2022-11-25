@@ -35,9 +35,10 @@ void addBooleanToSchema(documentSchema* schema, char* key, uint8_t initValue) {
     schema->size++;
 }
 
-void addTextToSchema(documentSchema* schema, char* key, text initValue) {
+void addTextToSchema(documentSchema* schema, char* key, char* initValue) {
     schema->elements[schema->size].type = TYPE_TEXT;
     strcpy(schema->elements[schema->size].key, key);
-    schema->elements[schema->size].textValue = initValue;
+    schema->elements[schema->size].textValue.size = strlen(initValue);
+    strcpy(schema->elements[schema->size].textValue.data, initValue);
     schema->size++;
 }

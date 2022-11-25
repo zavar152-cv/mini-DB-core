@@ -58,6 +58,5 @@ elementsChunk next(zgdbFile* file, elementIterator* iterator) {
                 break;
         }
 
-
     }
 }

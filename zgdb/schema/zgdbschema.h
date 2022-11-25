@@ -29,6 +29,6 @@ void destroySchema(documentSchema* schema);
 void addIntToSchema(documentSchema* schema, char* key, int32_t initValue);
 void addDoubleToSchema(documentSchema* schema, char* key, double initValue);
 void addBooleanToSchema(documentSchema* schema, char* key, uint8_t initValue);
-void addTextToSchema(documentSchema* schema, char* key, text initValue);
+void addTextToSchema(documentSchema* schema, char* key, char* initValue);
 
 #endif

@@ -32,10 +32,21 @@ off_t getElementSize(element cur) {
         case TYPE_DOUBLE:
             s += sizeof(double);
             break;
-        case TYPE_TEXT:
-            s += sizeof(uint32_t);
-            s += (off_t) (cur.textValue.size * sizeof(char));
+        case TYPE_TEXT: {
+            div_t divRes = div((int) cur.textValue.size, CHUNK_SIZE);
+            int chunks = divRes.quot;
+            if(divRes.rem != 0)
+                chunks++;
+            printf("Chunks: %d\n", chunks);
+
+            s += sizeof(firstTextChunk);
+            int count = 0;
+            for (count = 0; count < chunks; ++count) {
+                s += sizeof(uint8_t);
+                s += sizeof(textChunk);
+            }
             break;
+        }
     }
     return s;
 }
@@ -54,10 +65,36 @@ off_t writeElement(zgdbFile* file, element cur) {
         case TYPE_DOUBLE:
             fwrite(&cur.doubleValue, sizeof(double), 1, file->file);
             break;
-        case TYPE_TEXT:
-            fwrite(&cur.textValue.size, sizeof(uint32_t), 1, file->file);
-            fwrite(&cur.textValue.data, cur.textValue.size * sizeof(char), 1, file->file);
+        case TYPE_TEXT: {
+            div_t divRes = div((int) cur.textValue.size, CHUNK_SIZE);
+            int chunks = divRes.quot;
+            if(divRes.rem != 0)
+                chunks++;
+            printf("Chunks: %d\n", chunks);
+
+            firstTextChunk firstChunk = {.size = cur.textValue.size, .nextOffset = ftello(file->file) + sizeof(firstTextChunk)};
+            fwrite(&firstChunk, sizeof(firstTextChunk), 1, file->file);
+            int count = 0;
+            textChunk temp;
+            uint8_t chunkType = TYPE_TEXT_CHUNK;
+            for (count = 0; count < chunks; ++count) {
+                memset(temp.data, 0, CHUNK_SIZE);
+                if(count == chunks - 1) {
+                    temp.nextOffset = 0;
+                    for (int i = 0; i < divRes.rem; ++i) {
+                        temp.data[i] = cur.textValue.data[chunks * count + i];
+                    }
+                } else {
+                    temp.nextOffset = ftello(file->file) + sizeof(uint8_t) + sizeof(textChunk);
+                    for (int i = 0; i < CHUNK_SIZE; ++i) {
+                        temp.data[i] = cur.textValue.data[chunks * count + i];
+                    }
+                }
+                fwrite(&chunkType, sizeof(uint8_t), 1, file->file);
+                fwrite(&temp, sizeof(temp), 1, file->file);
+            }
             break;
+        }
     }
     return ftello(file->file) - t;
 }
@@ -76,10 +113,34 @@ element* readElement(zgdbFile* file) {
         case TYPE_DOUBLE:
             fread(&cur->doubleValue, sizeof(double), 1, file->file);
             break;
-        case TYPE_TEXT:
-            fread(&cur->textValue.size, sizeof(uint32_t), 1, file->file);
-            fread(&cur->textValue.data, cur->textValue.size * sizeof(char), 1, file->file);
+        case TYPE_TEXT: {
+            firstTextChunk firstChunk;
+            fread(&firstChunk, sizeof(firstTextChunk), 1, file->file);
+
+            div_t divRes = div((int) firstChunk.size, CHUNK_SIZE);
+            int chunks = divRes.quot;
+            if(divRes.rem != 0)
+                chunks++;
+            printf("Chunks: %d\n", chunks);
+            int count = 0;
+            textChunk temp;
+            uint8_t chunkType;
+            uint32_t nextOffset = firstChunk.nextOffset;
+            char buf[firstChunk.size];
+
+            for (count = 0; count < chunks; ++count) {
+                fseeko(file->file, nextOffset, SEEK_SET);
+                fread(&chunkType, sizeof(uint8_t), 1, file->file);
+                fread(&temp, sizeof(textChunk), 1, file->file);
+                nextOffset = temp.nextOffset;
+                for (int i = 0; i < CHUNK_SIZE; ++i) {
+                    buf[chunks * count + i] = temp.data[i];
+                }
+            }
+            cur->textValue.size = firstChunk.size;
+            strcpy(cur->textValue.data, buf);
             break;
+        }
     }
     return cur;
 }

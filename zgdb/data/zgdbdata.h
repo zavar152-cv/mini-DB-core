@@ -8,18 +8,24 @@
 
 #include "format/zgdbfile.h"
 
+#define CHUNK_SIZE 32
+
 /*
  * Описание возможных типов данных в документе
  * TYPE_INT - int32
  * TYPE_DOUBLE - double
  * TYPE_BOOLEAN - uint8 (два значения)
  * TYPE_TEXT - UTF-8 text (с длиной в начале)
+ * TYPE_TEXT_CHUNK (внутренний) - чанк текста
+ * TYPE_DEAD_TEXT_CHUNK (внутренний) - мёртвый чанк текста
  */
 typedef enum elementType {
     TYPE_INT = 0x01,
     TYPE_DOUBLE = 0x02,
     TYPE_BOOLEAN = 0x03,
     TYPE_TEXT = 0x04,
+    TYPE_TEXT_CHUNK = 0x05,
+    TYPE_DEAD_TEXT_CHUNK = 0x06
 } elementType;
 
 /*
@@ -75,8 +81,18 @@ typedef struct documentHeader {
  */
 typedef struct text {
     uint32_t size;
-    char* data;
+    char data[];
 } text;
+
+typedef struct __attribute__((packed)) firstTextChunk {
+    uint32_t size;
+    off_t nextOffset;
+} firstTextChunk;
+
+typedef struct __attribute__((packed)) textChunk {
+    char data[CHUNK_SIZE];
+    off_t nextOffset;
+} textChunk;
 
 typedef struct document document;
 

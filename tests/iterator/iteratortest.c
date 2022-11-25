@@ -13,7 +13,7 @@ int main() {
     zgdbFile* pFile = init("/tmp/test.zgdb");
 #endif
 #ifdef __MINGW32__
-    zgdbFile* pFile = init("C:/Users/Yarus/test.zgdb");
+    zgdbFile* pFile = init("D:/test.zgdb");
 #endif
 
     if(pFile == NULL) {
@@ -37,13 +37,14 @@ int main() {
     resultList list = findIfFromRoot(pFile, isRootDocument);
     document rootDoc = list.head->document;
     destroyResultList(&list);
-    documentSchema schema = initSchema(6);
+    documentSchema schema = initSchema(7);
     addBooleanToSchema(&schema, "bool1", 0);
     addDoubleToSchema(&schema, "double1", 1.0);
     addIntToSchema(&schema, "int1", 4);
     addBooleanToSchema(&schema, "bool2", 0);
     addDoubleToSchema(&schema, "double2", 1.0);
     addIntToSchema(&schema, "int2", 4);
+    addTextToSchema(&schema, "string1", "lol");
     createDocument(pFile, "test2", schema, rootDoc);
     destroySchema(&schema);
 
@@ -51,8 +52,6 @@ int main() {
     document doc = list.head->document;
     destroyResultList(&list);
     printDocumentElements(pFile, doc);
-
-
 
     deleteDocument(pFile, doc);
     finish(pFile);

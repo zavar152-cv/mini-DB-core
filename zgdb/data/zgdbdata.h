@@ -81,7 +81,7 @@ typedef struct documentHeader {
  */
 typedef struct text {
     uint32_t size;
-    char data[];
+    char* data;
 } text;
 
 typedef struct __attribute__((packed)) firstTextChunk {

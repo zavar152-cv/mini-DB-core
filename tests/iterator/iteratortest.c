@@ -37,7 +37,7 @@ int main() {
     resultList list = findIfFromRoot(pFile, isRootDocument);
     document rootDoc = list.head->document;
     destroyResultList(&list);
-    documentSchema schema = initSchema(7);
+    documentSchema schema = initSchema(8);
     addBooleanToSchema(&schema, "bool1", 0);
     addDoubleToSchema(&schema, "double1", 1.0);
     addIntToSchema(&schema, "int1", 4);
@@ -45,7 +45,8 @@ int main() {
     addDoubleToSchema(&schema, "double2", 1.0);
     addIntToSchema(&schema, "int2", 4);
     addTextToSchema(&schema, "string1", "lol");
-    createDocument(pFile, "test2", schema, rootDoc);
+    addTextToSchema(&schema, "string2", "hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world");
+    createDocument(pFile, "test2", &schema, rootDoc);
     destroySchema(&schema);
 
     list = findIfFromRoot(pFile, checkName);

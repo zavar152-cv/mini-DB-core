@@ -66,10 +66,10 @@ void printDocumentElements(zgdbFile* file, document document) {
     }
 }
 
-void createDocument(zgdbFile* file, const char* name, documentSchema schema, document parent) {
+void createDocument(zgdbFile* file, const char* name, documentSchema* schema, document parent) {
     documentHeader parentHeader = getDocumentHeader(file, parent.header.indexAttached);
     off_t docSize = sizeof(documentHeader);
-    if(schema.capacity != schema.size) {
+    if(schema->capacity != schema->size) {
         printf("Invalid schema\n");
         return;
     }
@@ -78,8 +78,8 @@ void createDocument(zgdbFile* file, const char* name, documentSchema schema, doc
         printf("Needed to expand indexes\n");
     }
 
-    for (int i = 0; i < schema.capacity; ++i) {
-        element cur = schema.elements[i];
+    for (int i = 0; i < schema->capacity; ++i) {
+        element cur = schema->elements[i];
         docSize += getElementSize(cur);
     }
 
@@ -94,15 +94,15 @@ void createDocument(zgdbFile* file, const char* name, documentSchema schema, doc
 
     fseeko(file->file, offset, SEEK_SET);
     fseeko(file->file, sizeof(documentHeader), SEEK_CUR);
-    for (int i = 0; i < schema.capacity; ++i) {
-        element cur = schema.elements[i];
+    for (int i = 0; i < schema->capacity; ++i) {
+        element cur = schema->elements[i];
         writeElement(file, cur);
     }
     fseeko(file->file, offset, SEEK_SET);
     documentId id = generateId(offset);
     uint64_t cap = pRelevantIndexMeta->blockSize == 0 ? docSize : pRelevantIndexMeta->blockSize;
     documentHeader header = {.id = id, .size = docSize, .capacity = cap,
-            .attrCount = schema.capacity, .indexAttached = pRelevantIndexMeta->indexOrder, .indexBrother = parentHeader.indexSon,
+            .attrCount = schema->capacity, .indexAttached = pRelevantIndexMeta->indexOrder, .indexBrother = parentHeader.indexSon,
             .indexSon = 0};
     strcpy(header.name, name);
     attachIndexToBlock(file, pRelevantIndexMeta->indexOrder, offset);

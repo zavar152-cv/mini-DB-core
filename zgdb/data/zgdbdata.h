@@ -1,8 +1,10 @@
 #ifndef ZGDBPROJECT_ZGDBDATA_H
 #define ZGDBPROJECT_ZGDBDATA_H
 
+#include <time.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include "format/zgdbfile.h"
 
@@ -112,5 +114,13 @@ bool isRootDocument(document document);
 bool hasChild(document document);
 
 bool hasBrother(document document);
+
+documentId generateId(off_t offset);
+
+off_t getElementSize(element cur);
+
+off_t writeElement(zgdbFile* file, element cur);
+
+element* readElement(zgdbFile* file);
 
 #endif

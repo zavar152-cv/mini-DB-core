@@ -1,7 +1,6 @@
 #ifndef ZGDBPROJECT_ZGDB_H
 #define ZGDBPROJECT_ZGDB_H
 
-#include <time.h>
 #include "data/zgdbdata.h"
 #include "schema/zgdbschema.h"
 #include "format/zgdbfile.h"

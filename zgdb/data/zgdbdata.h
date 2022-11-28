@@ -8,6 +8,7 @@
 
 #include "format/zgdbfile.h"
 
+
 #define CHUNK_SIZE 32
 
 /*
@@ -39,6 +40,16 @@ typedef enum terminators {
 } terminators;
 
 /*
+ * Описание типов блоков
+ * DOCUMENT - собственно, документ
+ * TOAST - блок для хранения строк
+ */
+typedef enum blockType {
+    DOCUMENT = 0x00,
+    TOAST = 0x01
+} blockType;
+
+/*
  * Структура для ID документа
  * timestamp - время создания документа в UNIX timestamp (4 байта)
  * offset - смещение документа на момент создания
@@ -51,6 +62,7 @@ typedef struct __attribute__((packed)) documentId {
 
 /*
  * Структура для заголовка документа
+ * blockType - тип блока (всегда DOCUMENT)
  * size - размер документа в байтах (5 байт)
  * capacity - максимальный размер документа (5 байт)
  * indexAttached - порядковый номер привязанного индекса (5 байт)
@@ -59,16 +71,20 @@ typedef struct __attribute__((packed)) documentId {
  * indexSon - порядковый номер индекса первого сына (5 байт)
  * indexBrother - порядковый номер индекса брата (5 байт)
  * attrCount - количество атрибутов (4 байта)
+ * firstTextPool - смещение до первого пула строчек, необходим,
+ *                 когда длина строк увеличивается (0 - пул отсутствует)
  *
  * 0 для indexSon и indexBrother означает NULL, т.к. ни у кого не может быть
  * сыном или братом корень дерева (корень привязан к нулевому индексу)
  */
 typedef struct documentHeader {
+    uint8_t blockType;
     uint64_t size: 40;
     uint64_t capacity: 40;
     uint64_t indexAttached: 40;
     uint64_t indexSon: 40;
     uint64_t indexBrother: 40;
+    uint64_t firstToastIndex: 40;
     uint32_t attrCount;
     char name[13];
     documentId id;
@@ -91,8 +107,17 @@ typedef struct __attribute__((packed)) firstTextChunk {
 
 typedef struct __attribute__((packed)) textChunk {
     char data[CHUNK_SIZE];
+    uint64_t toastIndex: 40;
     off_t nextOffset;
 } textChunk;
+
+typedef struct toast {
+    uint8_t blockType;
+    uint64_t capacity: 40;
+    uint64_t used: 40;
+    uint64_t indexAttached: 40;
+    uint64_t nextToastIndex: 40;
+} toast;
 
 typedef struct document document;
 
@@ -135,8 +160,8 @@ documentId generateId(off_t offset);
 
 off_t getElementSize(element cur);
 
-off_t writeElement(zgdbFile* file, element cur);
+off_t writeElement(zgdbFile* file, element cur, uint64_t firstToastIndex);
 
-element* readElement(zgdbFile* file);
+element* readElement(zgdbFile* file, document doc);
 
 #endif

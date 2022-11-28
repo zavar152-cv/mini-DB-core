@@ -13,7 +13,7 @@ set(GENERAL_SRC zgdb/format/zgdbfile.c zgdb/format/zgdbfile.h zgdb/index/zgdbind
 set(MAIN tests/iterator/iteratortest.c)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mno-ms-bitfields")
 if (WIN32)
-    set(WIN_SRC lib/mman-win32/mman.c lib/mman-win32/mman.h)
+    set(WIN_SRC lib/mman-win32/mman.c lib/mman-win32/mman.h lib/fmemopen_windows/libfmemopen.c lib/fmemopen_windows/libfmemopen.h)
     add_executable(ZGDBProject ${WIN_SRC} ${GENERAL_SRC} ${MAIN})
 endif (WIN32)
 

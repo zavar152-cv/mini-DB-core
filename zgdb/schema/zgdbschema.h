@@ -13,6 +13,9 @@
 typedef struct documentSchema {
     size_t capacity;
     size_t size;
+    off_t sizeOfElements;
+    size_t minToastCapacity;
+    bool reqToast;
     element* elements;
 } documentSchema;
 

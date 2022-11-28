@@ -15,7 +15,6 @@ int main() {
 #ifdef __MINGW32__
     zgdbFile* pFile = init("D:/test.zgdb");
 #endif
-
     if(pFile == NULL) {
         printf("Invalid format");
         return -1;
@@ -37,23 +36,41 @@ int main() {
     resultList list = findIfFromRoot(pFile, isRootDocument);
     document rootDoc = list.head->document;
     destroyResultList(&list);
-    documentSchema schema = initSchema(8);
+    documentSchema schema = initSchema(7);
     addBooleanToSchema(&schema, "bool1", 0);
     addDoubleToSchema(&schema, "double1", 1.0);
     addIntToSchema(&schema, "int1", 4);
+    addTextToSchema(&schema, "string1", "lol");
     addBooleanToSchema(&schema, "bool2", 0);
     addDoubleToSchema(&schema, "double2", 1.0);
     addIntToSchema(&schema, "int2", 4);
-    addTextToSchema(&schema, "string1", "lol");
-    addTextToSchema(&schema, "string2", "hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world");
+    //addTextToSchema(&schema, "string2", "hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world");
     createDocument(pFile, "test2", &schema, rootDoc);
+    printFreeIndexesList(&(pFile->freeList));
     destroySchema(&schema);
-
     list = findIfFromRoot(pFile, checkName);
     document doc = list.head->document;
     destroyResultList(&list);
-    printDocumentElements(pFile, doc);
 
+    documentSchema schema2 = initSchema(3);
+    addBooleanToSchema(&schema2, "bool1", 1);
+    addDoubleToSchema(&schema2, "double6", 1.5);
+    addIntToSchema(&schema2, "int9", -1);
+    createDocument(pFile, "test3", &schema2, doc);
+    destroySchema(&schema2);
+
+//    printDocumentElements(pFile, doc);
+//
+//    elementIterator iterator = createIterator(pFile, &doc);
+//
+//    elementEntry entry;
+//    while(hasNext(&iterator)) {
+//        entry = next(pFile, &iterator, false);
+//        printf("nop\n");
+//    }
+    list = findIfFromRoot(pFile, checkName);
+    doc = list.head->document;
+    destroyResultList(&list);
     deleteDocument(pFile, doc);
     finish(pFile);
 

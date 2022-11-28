@@ -43,7 +43,7 @@ void printDocumentElements(zgdbFile* file, document document) {
     fseeko(file->file, index.offset, SEEK_SET);
     fseeko(file->file, sizeof(documentHeader), SEEK_CUR);
     for (int i = 0; i < document.header.attrCount; ++i) {
-        element* pElement = readElement(file);
+        element* pElement = readElement(file, document);
         printf("EName: %s\n", pElement->key);
         printf("EType: %hhu\n", pElement->type);
         printf("EValue: ");
@@ -58,7 +58,7 @@ void printDocumentElements(zgdbFile* file, document document) {
                 printf("%f\n", pElement->doubleValue);
                 break;
             case TYPE_TEXT:
-                printf("%s\n", pElement->textValue.data);
+                //printf("%s\n", pElement->textValue.data);
                 break;
         }
         free(pElement);
@@ -74,17 +74,36 @@ void createDocument(zgdbFile* file, const char* name, documentSchema* schema, do
         return;
     }
 
-    if(file->freeList.indexesCount - file->freeList.newIndexesCount <= INDEX_INITIAL_CAPACITY/2) {
+    if(file->freeList.newIndexesCount <= INDEX_INITIAL_CAPACITY/4) {
         printf("Needed to expand indexes\n");
     }
-
-    for (int i = 0; i < schema->capacity; ++i) {
-        element cur = schema->elements[i];
-        docSize += getElementSize(cur);
-    }
+    
+    docSize += schema->sizeOfElements;
 
     relevantIndexMeta* pRelevantIndexMeta = findRelevantIndex(&file->freeList, docSize);
     zgdbIndex indexToAttach = getIndex(file, pRelevantIndexMeta->indexOrder);
+
+    uint64_t toastIndex = 0;
+    if(schema->reqToast) {
+        relevantIndexMeta* pRelevantIndexMetaToast = findRelevantIndex(&file->freeList, 2 * schema->minToastCapacity * CHUNK_SIZE);
+        zgdbIndex indexToAttachToast = getIndex(file, pRelevantIndexMetaToast->indexOrder);
+        off_t offsetToast = file->zgdbHeader.fileSize;
+        if(indexToAttachToast.flag == INDEX_DEAD)
+            offsetToast = indexToAttachToast.offset;
+        else if(indexToAttachToast.flag == INDEX_NEW)
+            offsetToast = file->zgdbHeader.fileSize;
+        fseeko(file->file, offsetToast, SEEK_SET);
+        uint64_t cap = pRelevantIndexMeta->blockSize == 0 ? 2*schema->minToastCapacity*CHUNK_SIZE + sizeof(toast) : pRelevantIndexMetaToast->blockSize;
+        toast toastBlock = {.blockType = TOAST, .capacity = cap,
+                .used = 0, .indexAttached = pRelevantIndexMetaToast->indexOrder, .nextToastIndex = 0};
+        fwrite(&toastBlock, sizeof(toast), 1, file->file);
+        toastIndex = pRelevantIndexMetaToast->indexOrder;
+        attachIndexToBlock(file, pRelevantIndexMetaToast->indexOrder, offsetToast);
+        if(pRelevantIndexMetaToast->blockSize == 0)
+            file->zgdbHeader.fileSize += docSize;
+        saveHeader(file);
+        free(pRelevantIndexMetaToast);
+    }
 
     off_t offset = file->zgdbHeader.fileSize;
     if(indexToAttach.flag == INDEX_DEAD)
@@ -96,14 +115,14 @@ void createDocument(zgdbFile* file, const char* name, documentSchema* schema, do
     fseeko(file->file, sizeof(documentHeader), SEEK_CUR);
     for (int i = 0; i < schema->capacity; ++i) {
         element cur = schema->elements[i];
-        writeElement(file, cur);
+        writeElement(file, cur, toastIndex);
     }
     fseeko(file->file, offset, SEEK_SET);
     documentId id = generateId(offset);
     uint64_t cap = pRelevantIndexMeta->blockSize == 0 ? docSize : pRelevantIndexMeta->blockSize;
     documentHeader header = {.id = id, .size = docSize, .capacity = cap,
             .attrCount = schema->capacity, .indexAttached = pRelevantIndexMeta->indexOrder, .indexBrother = parentHeader.indexSon,
-            .indexSon = 0};
+            .indexSon = 0, .firstToastIndex = toastIndex, .blockType = DOCUMENT};
     strcpy(header.name, name);
     attachIndexToBlock(file, pRelevantIndexMeta->indexOrder, offset);
     fwrite(&header, sizeof(documentHeader), 1, file->file);
@@ -120,10 +139,11 @@ void createDocument(zgdbFile* file, const char* name, documentSchema* schema, do
 void del(document document, zgdbFile* file) {
     if(!document.isRoot) {
         killIndex(file, document.header.indexAttached);
-        insertDeadIndex(&(file->freeList), document.header.indexAttached, document.header.capacity);//TODO blocksize is const
+        insertDeadIndex(&(file->freeList), document.header.indexAttached, document.header.capacity);
     }
 }
 
+//TODO FIX ROOT
 void deleteDocument(zgdbFile* file, document doc) {
     documentHeader parentHeader = getDocumentHeader(file, doc.indexParent);
     
@@ -156,6 +176,21 @@ void deleteDocument(zgdbFile* file, document doc) {
         child.indexParent = doc.indexParent;
         forEachDocument(file, del, child);
     }
+
+    if(doc.header.firstToastIndex != 0) {
+        uint64_t order = doc.header.firstToastIndex;
+        zgdbIndex indexToast;
+        toast temp;
+        while(order != 0) {
+            indexToast = getIndex(file, order);
+            fseeko(file->file, indexToast.offset, SEEK_SET);
+            fread(&temp, sizeof(toast), 1, file->file);
+            killIndex(file, order);
+            insertDeadIndex(&(file->freeList), order, temp.capacity);
+            order = temp.nextToastIndex;
+        }
+    }
+
     del(doc, file);
 }
 
@@ -315,7 +350,7 @@ void createRootDocument(zgdbFile* file, off_t offset) {
     documentId id = generateId(offset);
     documentHeader header = {.id = id, .size = sizeof(documentHeader), .capacity = sizeof(documentHeader),
             .attrCount = 0, .indexAttached = 0, .indexBrother = 0,
-            .indexSon = 0, .name = "root"};//TODO REMOVE SON !!!! ONLY FOR TEMP TEST
+            .indexSon = 0, .name = "root", .firstToastIndex = 0, .blockType = DOCUMENT};
 
     fwrite(&header, sizeof(documentHeader), 1, file->file);
     file->zgdbHeader.fileSize += sizeof(documentHeader);

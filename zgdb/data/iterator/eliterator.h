@@ -2,26 +2,35 @@
 #define ZGDBPROJECT_ELITERATOR_H
 
 #include <data/zgdbdata.h>
+#ifdef __linux__
+#include <stdio.h>
+#endif
+#ifdef __MINGW32__
+#include "fmemopen_windows/libfmemopen.h"
+#endif
 
-#define READ_BUFFER_SIZE 32 //TODO change
+#define READ_BUFFER_SIZE 64 //TODO change
 
 typedef struct elementIterator {
     off_t offsetInFile;
+    document* doc;
     uint32_t allAttributesCount;
     uint64_t allAttributesSize;
-    uint64_t currentPosition;
     uint32_t passedAttributesCount;
+    FILE* buffer;
 } elementIterator;
 
-typedef struct elementsChunk {
-    uint32_t size;
-    element* elements;
-} elementsChunk;
+typedef struct elementEntry {
+    element element;
+    off_t offsetInDocument;
+} elementEntry;
 
-elementIterator createIterator(off_t offsetInFile, uint32_t attrCount, uint64_t attrSize);
+elementIterator createIterator(zgdbFile* file, document* doc);
+
+void destroyIterator(elementIterator* iterator);
 
 bool hasNext(elementIterator* iterator);
 
-elementsChunk next(zgdbFile* file, elementIterator* iterator);
+elementEntry next(zgdbFile* file, elementIterator* iterator, bool onlyOffset);
 
 #endif

@@ -7,8 +7,9 @@
 #include "index/zgdbindex.h"
 #include "data/result/resultlist.h"
 #include "data/treestack/treestack.h"
+#include "data/iterator/eliterator.h"
 
-#define INDEX_INITIAL_CAPACITY 10
+#define INDEX_INITIAL_CAPACITY 20
 #define INDEX_MULTIPLIER 2
 #define ELEMENTS_LOAD_CAPACITY 4
 

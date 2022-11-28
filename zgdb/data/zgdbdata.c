@@ -72,7 +72,7 @@ off_t writeElement(zgdbFile* file, element cur) {
                 chunks++;
             printf("Chunks: %d\n", chunks);
 
-            firstTextChunk firstChunk = {.size = cur.textValue.size, .nextOffset = ftello(file->file) + sizeof(firstTextChunk)};
+            firstTextChunk firstChunk = {.size = cur.textValue.size, .nextOffset = sizeof(firstTextChunk)};
             fwrite(&firstChunk, sizeof(firstTextChunk), 1, file->file);
             int count = 0;
             textChunk temp;
@@ -85,7 +85,7 @@ off_t writeElement(zgdbFile* file, element cur) {
                         temp.data[i] = cur.textValue.data[CHUNK_SIZE * count + i];
                     }
                 } else {
-                    temp.nextOffset = (off_t) (ftello(file->file) + sizeof(uint8_t) + sizeof(textChunk));
+                    temp.nextOffset = (off_t) (sizeof(uint8_t) + sizeof(textChunk));
                     for (int i = 0; i < CHUNK_SIZE; ++i) {
                         temp.data[i] = cur.textValue.data[CHUNK_SIZE * count + i];
                     }
@@ -125,15 +125,14 @@ element* readElement(zgdbFile* file) {
             int count = 0;
             textChunk temp;
             uint8_t chunkType;
-            uint32_t nextOffset = firstChunk.nextOffset;
+            uint32_t nextOffset = ftello(file->file) - sizeof(firstTextChunk) + firstChunk.nextOffset;
             char buf[firstChunk.size];
             memset(buf, 0, firstChunk.size);
-
             for (count = 0; count < chunks; ++count) {
                 fseeko(file->file, nextOffset, SEEK_SET);
                 fread(&chunkType, sizeof(uint8_t), 1, file->file);
                 fread(&temp, sizeof(textChunk), 1, file->file);
-                nextOffset = temp.nextOffset;
+                nextOffset = ftello(file->file) - (sizeof(uint8_t) + sizeof(textChunk)) + temp.nextOffset;
                 for (int i = 0; i < CHUNK_SIZE; ++i) {
                     buf[CHUNK_SIZE * count + i] = temp.data[i];
                 }

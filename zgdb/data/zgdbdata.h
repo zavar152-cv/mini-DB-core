@@ -5,6 +5,9 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <limits.h>
+#include <ctype.h>
+#include <errno.h>
 
 #include "format/zgdbfile.h"
 
@@ -102,7 +105,7 @@ typedef struct text {
 
 typedef struct __attribute__((packed)) firstTextChunk {
     uint32_t size;
-    off_t nextOffset;
+    off_t offsetInToast;
 } firstTextChunk;
 
 typedef struct __attribute__((packed)) textChunk {

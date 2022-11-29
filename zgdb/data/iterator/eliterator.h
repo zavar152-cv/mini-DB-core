@@ -31,6 +31,6 @@ void destroyIterator(elementIterator* iterator);
 
 bool hasNext(elementIterator* iterator);
 
-elementEntry next(zgdbFile* file, elementIterator* iterator, bool onlyOffset);
+elementEntry next(zgdbFile* file, elementIterator* iterator, bool reqData);
 
 #endif

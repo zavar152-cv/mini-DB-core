@@ -58,7 +58,7 @@ void printDocumentElements(zgdbFile* file, document document) {
                 printf("%f\n", pElement->doubleValue);
                 break;
             case TYPE_TEXT:
-                //printf("%s\n", pElement->textValue.data);
+                printf("%s\n", pElement->textValue.data);
                 break;
         }
         free(pElement);
@@ -66,26 +66,23 @@ void printDocumentElements(zgdbFile* file, document document) {
     }
 }
 
-void createDocument(zgdbFile* file, const char* name, documentSchema* schema, document parent) {
+createStatus createDocument(zgdbFile* file, const char* name, documentSchema* schema, document parent) {
     documentHeader parentHeader = getDocumentHeader(file, parent.header.indexAttached);
     off_t docSize = sizeof(documentHeader);
     if(schema->capacity != schema->size) {
         printf("Invalid schema\n");
-        return;
+        return OUT_OF_INDEX;
     }
 
     if(file->freeList.newIndexesCount <= INDEX_INITIAL_CAPACITY/4) {
         printf("Needed to expand indexes\n");
     }
-    
-    docSize += schema->sizeOfElements;
 
-    relevantIndexMeta* pRelevantIndexMeta = findRelevantIndex(&file->freeList, docSize);
-    zgdbIndex indexToAttach = getIndex(file, pRelevantIndexMeta->indexOrder);
+    docSize += schema->sizeOfElements;
 
     uint64_t toastIndex = 0;
     if(schema->reqToast) {
-        relevantIndexMeta* pRelevantIndexMetaToast = findRelevantIndex(&file->freeList, 2 * schema->minToastCapacity * CHUNK_SIZE);
+        relevantIndexMeta* pRelevantIndexMetaToast = findRelevantIndex(&file->freeList, 2 * schema->minToastCapacity * (sizeof(uint8_t) + sizeof(textChunk)));
         zgdbIndex indexToAttachToast = getIndex(file, pRelevantIndexMetaToast->indexOrder);
         off_t offsetToast = file->zgdbHeader.fileSize;
         if(indexToAttachToast.flag == INDEX_DEAD)
@@ -93,17 +90,23 @@ void createDocument(zgdbFile* file, const char* name, documentSchema* schema, do
         else if(indexToAttachToast.flag == INDEX_NEW)
             offsetToast = file->zgdbHeader.fileSize;
         fseeko(file->file, offsetToast, SEEK_SET);
-        uint64_t cap = pRelevantIndexMeta->blockSize == 0 ? 2*schema->minToastCapacity*CHUNK_SIZE + sizeof(toast) : pRelevantIndexMetaToast->blockSize;
+        uint64_t cap = pRelevantIndexMetaToast->blockSize == 0 ? 2*schema->minToastCapacity*(sizeof(uint8_t) + sizeof(textChunk)) + sizeof(toast) : pRelevantIndexMetaToast->blockSize;
         toast toastBlock = {.blockType = TOAST, .capacity = cap,
                 .used = 0, .indexAttached = pRelevantIndexMetaToast->indexOrder, .nextToastIndex = 0};
         fwrite(&toastBlock, sizeof(toast), 1, file->file);
+        char buf[cap];
+        memset(&buf, 0, cap);
+        fwrite(&buf, cap, 1, file->file);
         toastIndex = pRelevantIndexMetaToast->indexOrder;
         attachIndexToBlock(file, pRelevantIndexMetaToast->indexOrder, offsetToast);
         if(pRelevantIndexMetaToast->blockSize == 0)
-            file->zgdbHeader.fileSize += docSize;
+            file->zgdbHeader.fileSize += (off_t) cap;
         saveHeader(file);
         free(pRelevantIndexMetaToast);
     }
+
+    relevantIndexMeta* pRelevantIndexMeta = findRelevantIndex(&file->freeList, docSize);
+    zgdbIndex indexToAttach = getIndex(file, pRelevantIndexMeta->indexOrder);
 
     off_t offset = file->zgdbHeader.fileSize;
     if(indexToAttach.flag == INDEX_DEAD)
@@ -134,6 +137,7 @@ void createDocument(zgdbFile* file, const char* name, documentSchema* schema, do
     fseeko(file->file, getIndex(file, parent.header.indexAttached).offset, SEEK_SET);
     fwrite(&parentHeader, sizeof(documentHeader), 1, file->file);
     free(pRelevantIndexMeta);
+    return CREATE_OK;
 }
 
 void del(document document, zgdbFile* file) {
@@ -146,7 +150,7 @@ void del(document document, zgdbFile* file) {
 //TODO FIX ROOT
 void deleteDocument(zgdbFile* file, document doc) {
     documentHeader parentHeader = getDocumentHeader(file, doc.indexParent);
-    
+
     if(parentHeader.indexSon == doc.header.indexAttached) {
         parentHeader.indexSon = doc.header.indexBrother;
         off_t i = getIndex(file, parentHeader.indexAttached).offset;
@@ -365,3 +369,187 @@ documentHeader getDocumentHeader(zgdbFile* file, uint64_t order) {
     return header;
 }
 
+str2intStatus str2int(int32_t *out, char *s) {
+    char *end;
+    if (s[0] == '\0' || isspace(s[0]))
+        return STR2INT_INCONVERTIBLE;
+    errno = 0;
+    int64_t l = strtol(s, &end, 10);
+    if (l > INT32_MAX || errno == ERANGE)
+        return STR2INT_OVERFLOW;
+    if (l < INT32_MIN || errno == ERANGE)
+        return STR2INT_UNDERFLOW;
+    if (*end != '\0')
+        return STR2INT_INCONVERTIBLE;
+    *out = (int32_t) l;
+    return STR2INT_SUCCESS;
+}
+
+str2doubleStatus str2double(double *out, char *s) {
+    char* end;
+    double number;
+    if (s[0] == '\0' || isspace(s[0]))
+        return STR2DOUBLE_INCONVERTIBLE;
+    errno = 0;
+    number = strtod(s, &end);
+    if (errno == ERANGE)
+        return STR2DOUBLE_INCONVERTIBLE;
+    if(number == 0 && s == end)
+        return STR2DOUBLE_INCONVERTIBLE;
+    *out = (double) number;
+    return STR2DOUBLE_SUCCESS;
+}
+
+void str2boolean(uint8_t *out, char *s) {
+    if(strcmp(s, "true") == 0) {
+        *out = 1;
+    } else {
+        *out = 0;
+    }
+}
+
+updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char* input) {
+    if(strlen(key) > 13)
+        return INVALID_NAME;
+    
+    elementIterator iterator = createIterator(file, &doc);
+    elementEntry entry;
+    while(hasNext(&iterator)) {
+        entry = next(file, &iterator, false);
+        if(strcmp(key, entry.element.key) == 0) {
+            switch (entry.element.type) {
+                case TYPE_BOOLEAN: {
+                    uint8_t booleanValue;
+                    str2boolean(&booleanValue, input);
+                    fseeko(file->file, (off_t) (entry.offsetInDocument + sizeof(uint8_t) + 13 * sizeof(char)), SEEK_SET);
+                    fwrite(&booleanValue, sizeof(uint8_t), 1, file->file);
+                    break;
+                }
+                case TYPE_INT: {
+                    int32_t intValue;
+                    str2intStatus status = str2int(&intValue, input);
+                    if(status != STR2INT_SUCCESS)
+                        return TYPE_PARSE_ERROR;
+                    fseeko(file->file, (off_t) (entry.offsetInDocument + sizeof(uint8_t) + 13 * sizeof(char)), SEEK_SET);
+                    fwrite(&intValue, sizeof(int32_t), 1, file->file);
+                    break;
+                }
+                case TYPE_DOUBLE: {
+                    double doubleValue;
+                    str2doubleStatus status = str2double(&doubleValue, input);
+                    if(status != STR2DOUBLE_SUCCESS)
+                        return TYPE_PARSE_ERROR;
+                    fseeko(file->file, (off_t) (entry.offsetInDocument + sizeof(uint8_t) + 13 * sizeof(char)), SEEK_SET);
+                    fwrite(&doubleValue, sizeof(double), 1, file->file);
+                    break;
+                }
+                case TYPE_TEXT: {
+                    firstTextChunk firstChunk;
+                    fseeko(file->file, (off_t) (entry.offsetInDocument + sizeof(uint8_t) + 13 * sizeof(char)), SEEK_SET);
+                    fread(&firstChunk, sizeof(firstTextChunk), 1, file->file);
+
+                    size_t oldLength = firstChunk.size;
+                    size_t newLength = strlen(input) + 1;
+
+                    if(newLength == oldLength) {
+                        div_t divRes = div((int) newLength, CHUNK_SIZE);
+                        int chunks = divRes.quot;
+                        if(divRes.rem != 0)
+                            chunks++;
+                        printf("Chunks: %d\n", chunks);
+                        zgdbIndex indexToast = getIndex(file, doc.header.firstToastIndex);
+                        toast tempToast;
+                        fseeko(file->file, indexToast.offset, SEEK_SET);
+                        fread(&tempToast, sizeof(toast), 1, file->file);
+                        char buf[newLength];
+                        memset(buf, 0, newLength);
+                        textChunk tempChunk;
+                        uint8_t chunkType;
+                        off_t nextOffset = firstChunk.offsetInToast;
+
+                        for (size_t count = 0; count < chunks; ++count) {
+                            fseeko(file->file, (off_t) (indexToast.offset + sizeof(toast) + nextOffset), SEEK_SET);
+                            memset(tempChunk.data, 0, CHUNK_SIZE);
+
+                            fread(&chunkType, sizeof(uint8_t), 1, file->file);
+                            off_t prev = ftello(file->file);
+                            fread(&tempChunk, sizeof(textChunk), 1, file->file);
+                            fseeko(file->file, prev, SEEK_SET);
+                            if(count == chunks - 1) {
+                                for (int i = 0; i < divRes.rem; ++i) {
+                                    tempChunk.data[i] = input[CHUNK_SIZE * count + i];
+                                }
+                            } else {
+                                for (int i = 0; i < CHUNK_SIZE; ++i) {
+                                    tempChunk.data[i] = input[CHUNK_SIZE * count + i];
+                                }
+                            }
+                            fwrite(&tempChunk, sizeof(textChunk), 1, file->file);
+                            if(tempChunk.toastIndex == tempToast.indexAttached) {
+                                nextOffset = tempChunk.nextOffset;
+                            } else {
+                                indexToast = getIndex(file, tempChunk.toastIndex);
+                                fseeko(file->file, indexToast.offset, SEEK_SET);
+                                fread(&tempToast, sizeof(toast), 1, file->file);
+                                nextOffset = tempChunk.nextOffset;
+                            }
+                        }
+                    } else if(newLength < oldLength) {
+                        div_t divRes = div((int) newLength, CHUNK_SIZE);
+                        int chunks = divRes.quot;
+                        if(divRes.rem != 0)
+                            chunks++;
+                        printf("Chunks: %d\n", chunks);
+                        zgdbIndex indexToast = getIndex(file, doc.header.firstToastIndex);
+                        toast tempToast;
+                        fseeko(file->file, indexToast.offset, SEEK_SET);
+                        fread(&tempToast, sizeof(toast), 1, file->file);
+                        char buf[newLength];
+                        memset(buf, 0, newLength);
+                        textChunk tempChunk;
+                        uint8_t chunkType;
+                        off_t nextOffset = firstChunk.offsetInToast;
+
+                        for (size_t count = 0; count < chunks; ++count) {
+                            fseeko(file->file, (off_t) (indexToast.offset + sizeof(toast) + nextOffset), SEEK_SET);
+                            memset(tempChunk.data, 0, CHUNK_SIZE);
+
+                            fread(&chunkType, sizeof(uint8_t), 1, file->file);
+                            off_t prev = ftello(file->file);
+                            fread(&tempChunk, sizeof(textChunk), 1, file->file);
+                            fseeko(file->file, prev, SEEK_SET);
+                            if(count == chunks - 1) {
+                                for (int i = 0; i < divRes.rem; ++i) {
+                                    tempChunk.data[i] = input[CHUNK_SIZE * count + i];
+                                }
+                            } else {
+                                for (int i = 0; i < CHUNK_SIZE; ++i) {
+                                    tempChunk.data[i] = input[CHUNK_SIZE * count + i];
+                                }
+                            }
+                            fwrite(&tempChunk, sizeof(textChunk), 1, file->file);
+                            if(tempChunk.toastIndex == tempToast.indexAttached) {
+                                nextOffset = tempChunk.nextOffset;
+                            } else {
+                                indexToast = getIndex(file, tempChunk.toastIndex);
+                                fseeko(file->file, indexToast.offset, SEEK_SET);
+                                fread(&tempToast, sizeof(toast), 1, file->file);
+                                nextOffset = tempChunk.nextOffset;
+                            }
+                        }
+                        firstChunk.size = newLength;
+                        fseeko(file->file, (off_t) (entry.offsetInDocument + sizeof(uint8_t) + 13 * sizeof(char)), SEEK_SET);
+                        fwrite(&firstChunk, sizeof(firstTextChunk), 1, file->file);
+                    } else if(newLength > oldLength) {
+
+                    }
+
+                    break;
+                }
+            }
+        }
+    }
+    
+    destroyIterator(&iterator);
+    return ELEMENT_NOT_FOUND;
+}

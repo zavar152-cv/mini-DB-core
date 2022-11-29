@@ -5,7 +5,7 @@ bool checkName(document d) {
 }
 
 bool checkName2(document d) {
-    return strcmp(d.header.name, "test3") == 0;
+    return strcmp(d.header.name, "test4") == 0;
 }
 
 int main() {
@@ -36,7 +36,8 @@ int main() {
     resultList list = findIfFromRoot(pFile, isRootDocument);
     document rootDoc = list.head->document;
     destroyResultList(&list);
-    documentSchema schema = initSchema(7);
+    documentSchema schema = initSchema(8);
+    addTextToSchema(&schema, "string2", "hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world");
     addBooleanToSchema(&schema, "bool1", 0);
     addDoubleToSchema(&schema, "double1", 1.0);
     addIntToSchema(&schema, "int1", 4);
@@ -44,7 +45,6 @@ int main() {
     addBooleanToSchema(&schema, "bool2", 0);
     addDoubleToSchema(&schema, "double2", 1.0);
     addIntToSchema(&schema, "int2", 4);
-    //addTextToSchema(&schema, "string2", "hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world");
     createDocument(pFile, "test2", &schema, rootDoc);
     printFreeIndexesList(&(pFile->freeList));
     destroySchema(&schema);
@@ -57,21 +57,35 @@ int main() {
     addDoubleToSchema(&schema2, "double6", 1.5);
     addIntToSchema(&schema2, "int9", -1);
     createDocument(pFile, "test3", &schema2, doc);
+    createDocument(pFile, "test4", &schema2, doc);
     destroySchema(&schema2);
 
-//    printDocumentElements(pFile, doc);
-//
-//    elementIterator iterator = createIterator(pFile, &doc);
-//
-//    elementEntry entry;
-//    while(hasNext(&iterator)) {
-//        entry = next(pFile, &iterator, false);
-//        printf("nop\n");
-//    }
+    printDocumentElements(pFile, doc);
+
+    updateElement(pFile, doc, "bool2", "true");
+    updateElement(pFile, doc, "double2", "3.14");
+    updateElement(pFile, doc, "string2", "olleh hello world hello world hello world hello world hello world hello world hello 12345");
+
+    printf("After update:\n");
+    printDocumentElements(pFile, doc);
+
+    elementIterator iterator = createIterator(pFile, &doc);
+
+    elementEntry entry;
+    while(hasNext(&iterator)) {
+        entry = next(pFile, &iterator, true);
+        printf("nop\n");
+    }
+
+    destroyIterator(&iterator);
+
     list = findIfFromRoot(pFile, checkName);
     doc = list.head->document;
     destroyResultList(&list);
     deleteDocument(pFile, doc);
+    printf("After delete:\n");
+    list = findIfFromRoot(pFile, checkName);
+    destroyResultList(&list);
     finish(pFile);
 
     return 0;

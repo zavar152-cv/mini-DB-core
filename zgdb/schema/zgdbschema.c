@@ -48,7 +48,12 @@ void addTextToSchema(documentSchema* schema, char* key, char* initValue) {
     schema->elements[schema->size].textValue.size = strlen(initValue) + 1;
     schema->elements[schema->size].textValue.data = malloc(schema->elements[schema->size].textValue.size);
     strcpy(schema->elements[schema->size].textValue.data, initValue);
+    div_t divRes = div((int) schema->elements[schema->size].textValue.size, CHUNK_SIZE);
+    int chunks = divRes.quot;
+    if(divRes.rem != 0)
+        chunks++;
+    printf("Chunks schema: %d\n", chunks);
+    schema->minToastCapacity += chunks;
     schema->size++;
     schema->sizeOfElements += sizeof(uint8_t) + 13 * sizeof(char) + sizeof(firstTextChunk);
-    schema->minToastCapacity += 1;
 }

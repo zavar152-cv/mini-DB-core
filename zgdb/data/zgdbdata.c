@@ -94,7 +94,7 @@ off_t writeElement(zgdbFile* file, element cur, uint64_t firstToastIndex) {
                         tempTextChunk.data[i] = cur.textValue.data[CHUNK_SIZE * count + i];
                     }
                 } else {
-                    tempTextChunk.nextOffset = (off_t) ((count + 1) * (sizeof(uint8_t) + sizeof(textChunk)));//offset in toast after header
+                    tempTextChunk.nextOffset = (off_t) ((tempToast.used + count + 1) * (sizeof(uint8_t) + sizeof(textChunk)));//offset in toast after header
                     tempTextChunk.toastIndex = firstToastIndex;
                     for (int i = 0; i < CHUNK_SIZE; ++i) {
                         tempTextChunk.data[i] = cur.textValue.data[CHUNK_SIZE * count + i];
@@ -102,8 +102,8 @@ off_t writeElement(zgdbFile* file, element cur, uint64_t firstToastIndex) {
                 }
                 fwrite(&chunkType, sizeof(uint8_t), 1, file->file);
                 fwrite(&tempTextChunk, sizeof(textChunk), 1, file->file);
-                tempToast.used++;
             }
+            tempToast.used += chunks;
             fseeko(file->file, indexToast.offset, SEEK_SET);
             fwrite(&tempToast, sizeof(toast), 1, file->file);
             fseeko(file->file, rec, SEEK_SET);

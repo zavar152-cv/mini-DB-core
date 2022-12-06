@@ -8,7 +8,7 @@ include_directories("zgdb" "lib")
 set(GENERAL_SRC zgdb/format/zgdbfile.c zgdb/format/zgdbfile.h zgdb/index/zgdbindex.c zgdb/index/zgdbindex.h
         zgdb/data/zgdbdata.c zgdb/data/zgdbdata.h zgdb/index/list/freelist.c zgdb/index/list/freelist.h
         zgdb/schema/zgdbschema.c zgdb/schema/zgdbschema.h zgdb/zgdb.c zgdb/zgdb.h zgdb/data/result/resultlist.c zgdb/data/result/resultlist.h
-        zgdb/data/treestack/treestack.c zgdb/data/treestack/treestack.h zgdb/data/iterator/eliterator.c zgdb/data/iterator/eliterator.h)
+        zgdb/data/treestack/treestack.c zgdb/data/treestack/treestack.h zgdb/data/iterator/eliterator.c zgdb/data/iterator/eliterator.h zgdb/data/iterator/dociterator.c zgdb/data/iterator/dociterator.h)
 
 set(MAIN tests/iterator/iteratortest.c)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mno-ms-bitfields")

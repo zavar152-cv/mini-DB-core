@@ -8,6 +8,7 @@
 #include "data/result/resultlist.h"
 #include "data/treestack/treestack.h"
 #include "data/iterator/eliterator.h"
+#include "data/iterator/dociterator.h"
 
 #define INDEX_INITIAL_CAPACITY 20
 #define INDEX_MULTIPLIER 2
@@ -40,9 +41,6 @@ typedef enum str2doubleStatus {
 zgdbFile* init(const char* path);
 
 bool finish(zgdbFile* file);
-
-//TODO only for debug, will be removed
-documentHeader getDocumentHeader(zgdbFile* file, uint64_t order);
 
 updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char* input);
 

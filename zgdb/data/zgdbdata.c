@@ -181,3 +181,16 @@ element* readElement(zgdbFile* file, document doc) {
     }
     return cur;
 }
+
+documentHeader getDocumentHeader(zgdbFile* file, uint64_t order) {
+    zgdbIndex index = getIndex(file, order);
+    fseeko(file->file, index.offset, SEEK_SET);
+    documentHeader header;
+    fread(&header, sizeof(documentHeader), 1, file->file);
+    return header;
+}
+
+bool isRootDocumentHeader(documentHeader header) {
+    return strcmp(header.name, "root") == 0 && header.indexAttached == 0 && header.attrCount == 0 &&
+           header.indexBrother == 0;
+}

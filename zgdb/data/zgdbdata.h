@@ -147,7 +147,7 @@ typedef struct element {
  * isRoot - является ли корнем
  * indexParent - индекс родителя (у корня 0)
  */
-typedef struct document {//TODO remove elements
+typedef struct document {
     bool isRoot;
     uint64_t indexParent: 40;
     documentHeader header;
@@ -166,5 +166,9 @@ off_t getElementSize(element cur);
 off_t writeElement(zgdbFile* file, element cur, uint64_t firstToastIndex);
 
 element* readElement(zgdbFile* file, document doc);
+
+documentHeader getDocumentHeader(zgdbFile* file, uint64_t order);
+
+bool isRootDocumentHeader(documentHeader header);
 
 #endif

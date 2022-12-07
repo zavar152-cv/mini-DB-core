@@ -33,11 +33,6 @@ bool finish(zgdbFile* file) {
     return closeZgdbFile(file);
 }
 
-bool isRootDocument0(documentHeader header) {
-    return strcmp(header.name, "root") == 0 && header.indexAttached == 0 && header.attrCount == 0 &&
-           header.indexBrother == 0;
-}
-
 void printDocumentElements(zgdbFile* file, document document) {
     zgdbIndex index = getIndex(file, document.header.indexAttached);
     fseeko(file->file, index.offset, SEEK_SET);
@@ -176,7 +171,7 @@ void deleteDocument(zgdbFile* file, document doc) {
         document child;
         documentHeader childHeader = getDocumentHeader(file, doc.header.indexSon);
         child.header = childHeader;
-        child.isRoot = isRootDocument0(childHeader);
+        child.isRoot = isRootDocumentHeader(childHeader);
         child.indexParent = doc.indexParent;
         forEachDocument(file, del, child);
     }
@@ -199,142 +194,25 @@ void deleteDocument(zgdbFile* file, document doc) {
 }
 
 void forEachDocument(zgdbFile* file, void (* consumer)(document, zgdbFile*), document start) {
-    treeStack* pStack = createStack();
-    nodeEntry next;
-    next.orderParent = start.indexParent;
-    next.order = start.header.indexAttached;
-    documentHeader header;
-    document document;
-    nodeEntry temp;
-    bool stop = false;
-
-    while (!stop) {
-        header = getDocumentHeader(file, next.order);
-        printf("Visited document: %s, size: %llu, ", header.name, header.size);
-        printf("parent: %llu (index: %llu)\n", next.orderParent, next.order);
-        document.header = header;
-        document.isRoot = isRootDocument0(header);
-        document.indexParent = next.orderParent;
-        //TODO reading elements
-
-        (*consumer) (document, file);
-
-        if (document.header.indexBrother == 0 && document.header.indexSon == 0) {
-            if (peek(pStack) == NULL) {
-                stop = true;
-            } else {
-                nodeEntry* pEntry = pop(pStack);
-                next.order = pEntry->order;
-                next.orderParent = pEntry->orderParent;
-            }
-        } else if (document.header.indexBrother != 0 && document.header.indexSon != 0) {
-            next.order = document.header.indexBrother;
-            next.orderParent = document.indexParent;
-            temp.order = document.header.indexSon;
-            temp.orderParent = document.header.indexAttached;
-            push(pStack, temp);
-        } else if (document.header.indexBrother != 0 && document.header.indexSon == 0) {
-            next.order = document.header.indexBrother;
-            next.orderParent = document.indexParent;
-        } else if (document.header.indexBrother == 0 && document.header.indexSon != 0) {
-            next.order = document.header.indexSon;
-            next.orderParent = document.header.indexAttached;
-        }
+    documentIterator iterator = createDocIterator(file, start.header.indexAttached, start.indexParent);
+    while (hasNextDoc(&iterator)) {
+        document doc = nextDoc(file, &iterator);
+        (*consumer) (doc, file);
     }
-    deleteStack(&pStack);
+    destroyDocIterator(&iterator);
 }
 
 void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predicate)(document), resultList* list) {
-    treeStack* pStack = createStack();
-    nodeEntry next;
-    next.orderParent = orderParent;
-    next.order = order;
-    documentHeader header;
-    document document;
-    nodeEntry temp;
-    bool stop = false;
-#if defined(__MINGW32__) && defined(DEBUG_INFO)
-    PROCESS_MEMORY_COUNTERS_EX pmc;
-    SIZE_T physMemUsedByMe;
-#endif
-    while (!stop) {
-        header = getDocumentHeader(file, next.order);
-        printf("Visited document: %s, ", header.name);
-        printf("parent: %llu (index: %llu)\n", next.orderParent, next.order);
-        document.header = header;
-        document.isRoot = isRootDocument0(header);
-        document.indexParent = next.orderParent;
-        //TODO reading elements
-
-        if ((*predicate)(document)) {
-            printf("Found document: %s, ", document.header.name);
-            printf("parent: %llu\n", document.indexParent);
-            insertResult(list, document);
+    documentIterator iterator = createDocIterator(file, order, orderParent);
+    while (hasNextDoc(&iterator)) {
+        document doc = nextDoc(file, &iterator);
+        if ((*predicate)(doc)) {
+            printf("Found document: %s, ", doc.header.name);
+            printf("parent: %llu\n", doc.indexParent);
+            insertResult(list, doc);
         }
-
-        if (document.header.indexBrother == 0 && document.header.indexSon == 0) {
-            if (peek(pStack) == NULL) {
-                stop = true;
-            } else {
-                nodeEntry* pEntry = pop(pStack);
-                next.order = pEntry->order;
-                next.orderParent = pEntry->orderParent;
-            }
-        } else if (document.header.indexBrother != 0 && document.header.indexSon != 0) {
-            next.order = document.header.indexBrother;
-            next.orderParent = document.indexParent;
-            temp.order = document.header.indexSon;
-            temp.orderParent = document.header.indexAttached;
-            push(pStack, temp);
-        } else if (document.header.indexBrother != 0 && document.header.indexSon == 0) {
-            next.order = document.header.indexBrother;
-            next.orderParent = document.indexParent;
-        } else if (document.header.indexBrother == 0 && document.header.indexSon != 0) {
-            next.order = document.header.indexSon;
-            next.orderParent = document.header.indexAttached;
-        }
-#if defined(__MINGW32__) && defined(DEBUG_INFO)
-        GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
-        physMemUsedByMe = pmc.WorkingSetSize;
-        printf("Usage memory by iteration findIf: %llu\n", physMemUsedByMe);
-#endif
     }
-    deleteStack(&pStack);
-}
-
-void findIf0Recursive(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predicate)(document), resultList* list) {
-#ifdef __MINGW32__
-    PROCESS_MEMORY_COUNTERS_EX pmc;
-    SIZE_T physMemUsedByMe;
-    GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
-    physMemUsedByMe = pmc.WorkingSetSize;
-    printf("Usage memory by findIf: %llu\n", physMemUsedByMe);
-#endif
-    documentHeader header = getDocumentHeader(file, order);
-    printf("Visited document: %s, ", header.name);
-    printf("parent: %llu\n", orderParent);
-    document document;
-    document.header = header;
-    document.isRoot = isRootDocument0(header);
-    document.indexParent = orderParent;
-    //TODO reading elements
-
-    if ((*predicate)(document)) {
-        printf("Found document: %s, ", document.header.name);
-        printf("parent: %llu\n", document.indexParent);
-        insertResult(list, document);
-    }
-
-    if (document.header.indexBrother == 0 && document.header.indexSon == 0) {
-        return;
-    } else if (document.header.indexBrother != 0 && document.header.indexSon != 0) {
-        findIf0(file, document.header.indexBrother, document.indexParent, predicate, list);
-        findIf0(file, document.header.indexSon, document.header.indexAttached, predicate, list);
-    } else if (document.header.indexBrother != 0 && document.header.indexSon == 0) {
-        findIf0(file, document.header.indexBrother, document.indexParent, predicate, list);
-    } else if (document.header.indexBrother == 0 && document.header.indexSon != 0) {
-        findIf0(file, document.header.indexSon, document.header.indexAttached, predicate, list);
-    }
+    destroyDocIterator(&iterator);
 }
 
 resultList findIfFromRoot(zgdbFile* file, bool (* predicate)(document)) {
@@ -359,14 +237,6 @@ void createRootDocument(zgdbFile* file, off_t offset) {
     fwrite(&header, sizeof(documentHeader), 1, file->file);
     file->zgdbHeader.fileSize += sizeof(documentHeader);
     saveHeader(file);
-}
-
-documentHeader getDocumentHeader(zgdbFile* file, uint64_t order) {
-    zgdbIndex index = getIndex(file, order);
-    fseeko(file->file, index.offset, SEEK_SET);
-    documentHeader header;
-    fread(&header, sizeof(documentHeader), 1, file->file);
-    return header;
 }
 
 str2intStatus str2int(int32_t *out, char *s) {
@@ -408,15 +278,16 @@ void str2boolean(uint8_t *out, char *s) {
     }
 }
 
-//TODO not found
+//TODO return on update
 updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char* input) {
     if(strlen(key) > 13)
         return INVALID_NAME;
-    
-    elementIterator iterator = createIterator(file, &doc);
+
+    updateElementStatus statusToReturn = ELEMENT_NOT_FOUND;
+    elementIterator iterator = createElIterator(file, &doc);
     elementEntry entry;
-    while(hasNext(&iterator)) {
-        entry = next(file, &iterator, false);
+    while(hasNextEl(&iterator)) {
+        entry = nextEl(file, &iterator, false);
         if(strcmp(key, entry.element.key) == 0) {
             switch (entry.element.type) {
                 case TYPE_BOOLEAN: {
@@ -424,6 +295,7 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
                     str2boolean(&booleanValue, input);
                     fseeko(file->file, (off_t) (entry.offsetInDocument + sizeof(uint8_t) + 13 * sizeof(char)), SEEK_SET);
                     fwrite(&booleanValue, sizeof(uint8_t), 1, file->file);
+                    statusToReturn = UPDATE_OK;
                     break;
                 }
                 case TYPE_INT: {
@@ -433,6 +305,7 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
                         return TYPE_PARSE_ERROR;
                     fseeko(file->file, (off_t) (entry.offsetInDocument + sizeof(uint8_t) + 13 * sizeof(char)), SEEK_SET);
                     fwrite(&intValue, sizeof(int32_t), 1, file->file);
+                    statusToReturn = UPDATE_OK;
                     break;
                 }
                 case TYPE_DOUBLE: {
@@ -442,6 +315,7 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
                         return TYPE_PARSE_ERROR;
                     fseeko(file->file, (off_t) (entry.offsetInDocument + sizeof(uint8_t) + 13 * sizeof(char)), SEEK_SET);
                     fwrite(&doubleValue, sizeof(double), 1, file->file);
+                    statusToReturn = UPDATE_OK;
                     break;
                 }
                 case TYPE_TEXT: {
@@ -619,16 +493,12 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
                                     off_t rec = ftello(file->file);
                                     fread(&tempChunk, sizeof(textChunk), 1, file->file);
                                     if(count == chunks - 1) {
-//                                        for (int i = 0; i < divRes.rem; ++i) {
-//                                            tempChunk.data[i] = input[CHUNK_SIZE * count + i];
-//                                        }
                                         lastSymbol = CHUNK_SIZE * count;
-                                        //lastSymbol++;
                                         tempChunk.nextOffset = (off_t) (tempToast.used * (sizeof(uint8_t) + sizeof(textChunk)));
                                     }
-                                        for (int i = 0; i < CHUNK_SIZE; ++i) {
-                                            tempChunk.data[i] = input[CHUNK_SIZE * count + i];
-                                        }
+                                    for (int i = 0; i < CHUNK_SIZE; ++i) {
+                                        tempChunk.data[i] = input[CHUNK_SIZE * count + i];
+                                    }
 
                                     fseeko(file->file, rec, SEEK_SET);
                                     fwrite(&tempChunk, sizeof(textChunk), 1, file->file);
@@ -644,7 +514,7 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
 
                                 textChunk tempTextChunk;
                                 chunkType = TYPE_TEXT_CHUNK;
-                                off_t tempOffset = tempChunk.nextOffset;
+
                                 fseeko(file->file, (off_t) (indexToast.offset + sizeof(toast) + (tempToast.used * (sizeof(uint8_t) + sizeof(textChunk)))), SEEK_SET);
                                 for (int count = 0; count < req; ++count) {
                                     memset(tempTextChunk.data, 0, CHUNK_SIZE);
@@ -671,58 +541,17 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
                                 //check if left == 0
                             }
                         }
-
-//                            if(count == chunks - 1) {
-//                                for (int i = 0; i < divRes.rem; ++i) {
-//                                    tempChunk.data[i] = input[CHUNK_SIZE * count + i];
-//                                }
-//                            } else {
-//                                for (int i = 0; i < CHUNK_SIZE; ++i) {
-//                                    tempChunk.data[i] = input[CHUNK_SIZE * count + i];
-//                                }
-//                            }
-//                            fwrite(&tempChunk, sizeof(textChunk), 1, file->file);
-//                            if(tempChunk.toastIndex == tempToast.indexAttached && tempChunk.nextOffset != 0) {
-//                                nextOffset = tempChunk.nextOffset;
-//                            } else if(tempChunk.toastIndex == tempToast.indexAttached && tempChunk.nextOffset == 0) {
-//                                uint64_t left = (tempToast.capacity - sizeof(toast))/(sizeof(uint8_t) + sizeof(textChunk)) - tempToast.used;
-//
-//                                if(left >= (chunks - count)) {
-//                                    textChunk tempLeftChunk = {.nextOffset = 0, .toastIndex = tempChunk.toastIndex};
-//                                    memset(tempLeftChunk.data, 0, CHUNK_SIZE);
-//                                    off_t endOfToast = (off_t) (tempToast.used * (sizeof(uint8_t) + sizeof(textChunk)));
-//                                    fseeko(file->file, (off_t) (indexToast.offset + sizeof(toast) + endOfToast), SEEK_SET);
-//                                    fwrite(&chunkType, sizeof(uint8_t), 1, file->file);
-//                                    fwrite(&tempLeftChunk, sizeof(textChunk), 1, file->file);
-//                                    tempToast.used++;
-//                                    fseeko(file->file, indexToast.offset, SEEK_SET);
-//                                    fwrite(&tempToast, sizeof(toast), 1, file->file);
-//                                    nextOffset = endOfToast;
-//                                    tempChunk.nextOffset = endOfToast;
-//                                } else if(left == 0 || left < (chunks - count)) {
-//
-//                                }
-//
-//                                fseeko(file->file, prev, SEEK_SET);
-//                                fwrite(&tempChunk, sizeof(textChunk), 1, file->file);
-//                            } else {
-//                                indexToast = getIndex(file, tempChunk.toastIndex);
-//                                fseeko(file->file, indexToast.offset, SEEK_SET);
-//                                fread(&tempToast, sizeof(toast), 1, file->file);
-//                                nextOffset = tempChunk.nextOffset;
-//                            }
-//                        }
                         firstChunk.size = newLength;
                         fseeko(file->file, (off_t) (entry.offsetInDocument + sizeof(uint8_t) + 13 * sizeof(char)), SEEK_SET);
                         fwrite(&firstChunk, sizeof(firstTextChunk), 1, file->file);
                     }
-
+                    statusToReturn = UPDATE_OK;
                     break;
                 }
             }
         }
     }
-    
-    destroyIterator(&iterator);
-    return ELEMENT_NOT_FOUND;
+
+    destroyElIterator(&iterator);
+    return statusToReturn;
 }

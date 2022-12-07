@@ -1,7 +1,7 @@
 #include "eliterator.h"
 #include "index/zgdbindex.h"
 
-elementIterator createIterator(zgdbFile* file, document* doc) {
+elementIterator createElIterator(zgdbFile* file, document* doc) {
     elementIterator iterator;
     iterator.doc = doc;
     iterator.offsetInFile = (off_t) (getIndex(file, doc->header.indexAttached).offset + sizeof(documentHeader));
@@ -12,16 +12,16 @@ elementIterator createIterator(zgdbFile* file, document* doc) {
     return iterator;
 }
 
-void destroyIterator(elementIterator* iterator) {
+void destroyElIterator(elementIterator* iterator) {
     if(iterator->buffer != NULL)
         fclose(iterator->buffer);
 }
 
-bool hasNext(elementIterator* iterator) {
+bool hasNextEl(elementIterator* iterator) {
     return iterator->allAttributesCount != iterator->passedAttributesCount;
 }
 
-elementEntry next(zgdbFile* file, elementIterator* iterator, bool reqData) {
+elementEntry nextEl(zgdbFile* file, elementIterator* iterator, bool reqData) {
     elementEntry entry;
     char bufTemp[READ_BUFFER_SIZE];
     if (iterator->buffer == NULL) {

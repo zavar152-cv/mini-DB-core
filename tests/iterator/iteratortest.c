@@ -77,15 +77,15 @@ int main() {
     printf("After update 2:\n");
     printDocumentElements(pFile, doc);
 
-    elementIterator iterator = createIterator(pFile, &doc);
+    elementIterator iterator = createElIterator(pFile, &doc);
 
     elementEntry entry;
-    while(hasNext(&iterator)) {
-        entry = next(pFile, &iterator, true);
+    while(hasNextEl(&iterator)) {
+        entry = nextEl(pFile, &iterator, true);
         printf("nop\n");
     }
 
-    destroyIterator(&iterator);
+    destroyElIterator(&iterator);
 
     list = findIfFromRoot(pFile, checkName);
     doc = list.head->document;
@@ -95,7 +95,6 @@ int main() {
     list = findIfFromRoot(pFile, checkName);
     destroyResultList(&list);
     finish(pFile);
-
     return 0;
 }
 

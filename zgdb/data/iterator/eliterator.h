@@ -25,12 +25,12 @@ typedef struct elementEntry {
     off_t offsetInDocument;
 } elementEntry;
 
-elementIterator createIterator(zgdbFile* file, document* doc);
+elementIterator createElIterator(zgdbFile* file, document* doc);
 
-void destroyIterator(elementIterator* iterator);
+void destroyElIterator(elementIterator* iterator);
 
-bool hasNext(elementIterator* iterator);
+bool hasNextEl(elementIterator* iterator);
 
-elementEntry next(zgdbFile* file, elementIterator* iterator, bool reqData);
+elementEntry nextEl(zgdbFile* file, elementIterator* iterator, bool reqData);
 
 #endif

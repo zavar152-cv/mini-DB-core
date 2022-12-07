@@ -400,6 +400,10 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
                         int chunks = divRes.quot;
                         if(divRes.rem != 0)
                             chunks++;
+                        if(divRes.rem == 0) {
+                            newLength++;
+                            chunks++;
+                        }
                         printf("Chunks: %d\n", chunks);
                         zgdbIndex indexToast = getIndex(file, doc.header.firstToastIndex);
                         toast tempToast;
@@ -446,11 +450,19 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
                         int chunks = divRes.quot;
                         if(divRes.rem != 0)
                             chunks++;
+                        if(divRes.rem == 0) {
+                            newLength++;
+                            chunks++;
+                        }
 
                         div_t divResNew = div((int) newLength, CHUNK_SIZE);
                         int chunksNew = divResNew.quot;
                         if(divResNew.rem != 0)
                             chunksNew++;
+                        if(divResNew.rem == 0) {
+                            newLength++;
+                            chunksNew++;
+                        }
 
                         printf("Chunks old: %d\n", chunks);
                         printf("Chunks new: %d\n", chunksNew);

@@ -78,10 +78,11 @@ zgdbFile* loadOrCreateZgdbFile(const char* path) {
         FILE* file = fopen(path, "wb+");
         zgdbHeader header;
         header.indexCount = 0;
-        header.freeListOffset = 0;
+        //header.freeListOffset = 0;
         header.zgdbType = getZgdbFormat();
         header.betweenSpace = 0;
         header.version = 1;
+        header.nodes = 0;
         header.fileSize = sizeof(zgdbHeader);
         fseeko(file, 0, SEEK_SET);
         fwrite(&header, sizeof(zgdbHeader), 1, file);

@@ -126,6 +126,7 @@ createStatus createDocument(zgdbFile* file, const char* name, documentSchema* sc
     fwrite(&header, sizeof(documentHeader), 1, file->file);
     if(pRelevantIndexMeta->blockSize == 0)
         file->zgdbHeader.fileSize += docSize;
+    file->zgdbHeader.nodes++;
     saveHeader(file);
 
     parentHeader.indexSon = pRelevantIndexMeta->indexOrder;
@@ -139,6 +140,8 @@ void del(document document, zgdbFile* file) {
     if(!document.isRoot) {
         killIndex(file, document.header.indexAttached);
         insertDeadIndex(&(file->freeList), document.header.indexAttached, document.header.capacity);
+        file->zgdbHeader.nodes--;
+        saveHeader(file);
     }
 }
 
@@ -236,6 +239,7 @@ void createRootDocument(zgdbFile* file, off_t offset) {
 
     fwrite(&header, sizeof(documentHeader), 1, file->file);
     file->zgdbHeader.fileSize += sizeof(documentHeader);
+    file->zgdbHeader.nodes++;
     saveHeader(file);
 }
 
@@ -474,18 +478,18 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
                         uint64_t currentLeft = (tempCurrentToast.capacity - sizeof(toast)) / (sizeof(uint8_t) + sizeof(textChunk)) - tempCurrentToast.used;
 
                         //TODO ???
-                        while(currentLeft == 0) {
-                            if(tempCurrentToast.nextToastIndex == 0) {
-                                uint64_t i = createNewToast(file, tempCurrentToast.capacity);
-                                tempCurrentToast.nextToastIndex = i;
-                                fseeko(file->file, indexCurrentToast.offset, SEEK_SET);
-                                fwrite(&tempCurrentToast, sizeof(toast), 1, file->file);
-                            }
-                            indexCurrentToast = getIndex(file, tempCurrentToast.nextToastIndex);
-                            fseeko(file->file, indexCurrentToast.offset, SEEK_SET);
-                            fread(&tempCurrentToast, sizeof(toast), 1, file->file);
-                            currentLeft = (tempCurrentToast.capacity - sizeof(toast)) / (sizeof(uint8_t) + sizeof(textChunk)) - tempCurrentToast.used;
-                        }
+//                        while(currentLeft == 0) {
+//                            if(tempCurrentToast.nextToastIndex == 0) {
+//                                uint64_t i = createNewToast(file, tempCurrentToast.capacity);
+//                                tempCurrentToast.nextToastIndex = i;
+//                                fseeko(file->file, indexCurrentToast.offset, SEEK_SET);
+//                                fwrite(&tempCurrentToast, sizeof(toast), 1, file->file);
+//                            }
+//                            indexCurrentToast = getIndex(file, tempCurrentToast.nextToastIndex);
+//                            fseeko(file->file, indexCurrentToast.offset, SEEK_SET);
+//                            fread(&tempCurrentToast, sizeof(toast), 1, file->file);
+//                            currentLeft = (tempCurrentToast.capacity - sizeof(toast)) / (sizeof(uint8_t) + sizeof(textChunk)) - tempCurrentToast.used;
+//                        }
 
                         textChunk tempChunk;
                         uint8_t chunkType;
@@ -599,7 +603,6 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
                                 tempCurrentToast.nextToastIndex = newToastIndex;
                                 fseeko(file->file, indexCurrentToast.offset, SEEK_SET);
                                 fwrite(&tempCurrentToast, sizeof(toast), 1, file->file);
-
                                 size_t lastSymbol = 0;
                                 nextOffset = firstChunk.offsetInToast;
                                 for (size_t count = 0; count < chunks; ++count) {
@@ -612,6 +615,10 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
                                     if(count == chunks - 1) {
                                         lastSymbol = CHUNK_SIZE * count;
                                         tempChunk.nextOffset = (off_t) ((tempCurrentToast.used) * (sizeof(uint8_t) + sizeof(textChunk)));
+                                        if(left == 0) {
+                                            tempChunk.nextOffset = 0;
+                                            tempChunk.toastIndex = newToastIndex;
+                                        }
                                     }
                                     for (int i = 0; i < CHUNK_SIZE; ++i) {
                                         tempChunk.data[i] = input[CHUNK_SIZE * count + i];
@@ -630,6 +637,7 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
                                         }
                                     }
                                 }
+
                                 size_t tempLastSymbol = 0;
                                 if(left != 0) {
                                     textChunk tempTextChunk;

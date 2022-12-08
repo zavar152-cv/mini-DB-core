@@ -21,7 +21,7 @@ int main() {
     }
     printf("Before:\n");
     printf("Type: %d\n", pFile->zgdbHeader.zgdbType);
-    printf("Offset: %lu\n", pFile->zgdbHeader.freeListOffset);
+    printf("Nodes: %lu\n", pFile->zgdbHeader.nodes);
     printf("Index count: %lu\n", pFile->zgdbHeader.indexCount);
     printf("Version: %d\n", pFile->zgdbHeader.version);
     printf("Size: %ld\n\n", pFile->zgdbHeader.fileSize);

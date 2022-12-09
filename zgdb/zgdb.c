@@ -52,9 +52,11 @@ void printDocumentElements(zgdbFile* file, document document) {
             case TYPE_DOUBLE:
                 printf("%f\n", pElement->doubleValue);
                 break;
-            case TYPE_TEXT:
+            case TYPE_TEXT: {
                 printf("%s\n", pElement->textValue.data);
+                free(pElement->textValue.data);
                 break;
+            }
         }
         free(pElement);
         printf("\n");

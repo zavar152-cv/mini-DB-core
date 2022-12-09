@@ -46,7 +46,7 @@ int main() {
 
         list = findIfFromRoot(pFile, isRootDocument);
         rootDoc = list.head->document;
-
+        destroyResultList(&list);
         documentSchema schema2 = initSchema(4);
         addBooleanToSchema(&schema2, "bool1", 1);
         addDoubleToSchema(&schema2, "double6", 1.5);
@@ -57,6 +57,7 @@ int main() {
         list = findIfFromRoot(pFile, checkName2);
         document d = list.head->document;
         createDocument(pFile, "test5", &schema2, d);
+        destroyResultList(&list);
         list = findIfFromRoot(pFile, checkName2);
         d = list.head->document;
         createDocument(pFile, "test6", &schema2, d);
@@ -72,6 +73,7 @@ int main() {
         deleteDocument(pFile, doc);//TODO duplicate docs? (in output)
 
         printf("After delete:\n");
+        destroyResultList(&list);
         list = findIfFromRoot(pFile, checkName2);
     }
     printResultList(&list);

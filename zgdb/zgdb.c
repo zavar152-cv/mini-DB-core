@@ -218,6 +218,24 @@ void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predi
     destroyDocIterator(&iterator);
 }
 
+resultList join(zgdbFile* file, document parent) {
+    resultList pList = createResultList();
+
+    document temp;
+    documentHeader tempHeader;
+    uint64_t tempIndex = parent.header.indexSon;
+    while(tempIndex != 0) {
+        tempHeader = getDocumentHeader(file, tempIndex);
+        temp.header = tempHeader;
+        temp.isRoot = isRootDocumentHeader(tempHeader);
+        temp.indexParent = parent.header.indexAttached;
+        tempIndex = tempHeader.indexBrother;
+        insertResult(&pList, temp);
+    }
+
+    return pList;
+}
+
 resultList findIfFromRoot(zgdbFile* file, bool (* predicate)(document)) {
     resultList pList = createResultList();
     findIf0(file, 0, 0, predicate, &pList);

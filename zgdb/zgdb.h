@@ -56,4 +56,6 @@ resultList findIfFromRoot(zgdbFile* file, bool (* predicate)(document));
 
 resultList findIfFromDocument(zgdbFile* file, bool (* predicate)(document), document document);
 
+resultList join(zgdbFile* file, document parent);
+
 #endif

@@ -14,34 +14,65 @@ documentSchema initSchema(size_t capacity) {
 }
 
 void destroySchema(documentSchema* schema) {
+    for (int i = 0; i < schema->size; ++i) {
+        if (schema->elements[i].type == TYPE_TEXT)
+            free(schema->elements[i].textValue.data);
+    }
     free(schema->elements);
 }
 
-void addIntToSchema(documentSchema* schema, char* key, int32_t initValue) {
+addStatus addIntToSchema(documentSchema* schema, char* key, int32_t initValue) {
+    for (int i = 0; i < schema->size; ++i) {
+        if(strcmp(schema->elements[i].key, key) == 0)
+            return NAME_EXISTS;
+    }
+    if (schema->size == schema->capacity)
+        return SCHEMA_OVERFLOW;
     schema->elements[schema->size].type = TYPE_INT;
     strcpy(schema->elements[schema->size].key, key);
     schema->elements[schema->size].integerValue = initValue;
     schema->size++;
     schema->sizeOfElements += sizeof(uint8_t) + 13 * sizeof(char) + sizeof(int32_t);
+    return ADD_OK;
 }
 
-void addDoubleToSchema(documentSchema* schema, char* key, double initValue) {
+addStatus addDoubleToSchema(documentSchema* schema, char* key, double initValue) {
+    for (int i = 0; i < schema->size; ++i) {
+        if(strcmp(schema->elements[i].key, key) == 0)
+            return NAME_EXISTS;
+    }
+    if (schema->size == schema->capacity)
+        return SCHEMA_OVERFLOW;
     schema->elements[schema->size].type = TYPE_DOUBLE;
     strcpy(schema->elements[schema->size].key, key);
     schema->elements[schema->size].doubleValue = initValue;
     schema->size++;
     schema->sizeOfElements += sizeof(uint8_t) + 13 * sizeof(char) + sizeof(double);
+    return ADD_OK;
 }
 
-void addBooleanToSchema(documentSchema* schema, char* key, uint8_t initValue) {
+addStatus addBooleanToSchema(documentSchema* schema, char* key, uint8_t initValue) {
+    for (int i = 0; i < schema->size; ++i) {
+        if(strcmp(schema->elements[i].key, key) == 0)
+            return NAME_EXISTS;
+    }
+    if (schema->size == schema->capacity)
+        return SCHEMA_OVERFLOW;
     schema->elements[schema->size].type = TYPE_BOOLEAN;
     strcpy(schema->elements[schema->size].key, key);
     schema->elements[schema->size].booleanValue = initValue;
     schema->size++;
     schema->sizeOfElements += sizeof(uint8_t) + 13 * sizeof(char) + sizeof(uint8_t);
+    return ADD_OK;
 }
 
-void addTextToSchema(documentSchema* schema, char* key, char* initValue) {
+addStatus addTextToSchema(documentSchema* schema, char* key, char* initValue) {
+    for (int i = 0; i < schema->size; ++i) {
+        if(strcmp(schema->elements[i].key, key) == 0)
+            return NAME_EXISTS;
+    }
+    if (schema->size == schema->capacity)
+        return SCHEMA_OVERFLOW;
     schema->reqToast = true;
     schema->elements[schema->size].type = TYPE_TEXT;
     strcpy(schema->elements[schema->size].key, key);
@@ -56,4 +87,5 @@ void addTextToSchema(documentSchema* schema, char* key, char* initValue) {
     schema->minToastCapacity += chunks;
     schema->size++;
     schema->sizeOfElements += sizeof(uint8_t) + 13 * sizeof(char) + sizeof(firstTextChunk);
+    return ADD_OK;
 }

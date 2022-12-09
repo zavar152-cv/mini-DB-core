@@ -19,7 +19,7 @@ void destroyIndexesList(freeIndexesList* list) {
     }
 }
 
-//TODO 40 bits check
+
 node* createNewNode(uint64_t indexOrder, uint64_t blockSize) {
     node* newNode = (node*) malloc(sizeof(node));
     newNode->blockSize = blockSize;
@@ -29,7 +29,7 @@ node* createNewNode(uint64_t indexOrder, uint64_t blockSize) {
     return newNode;
 }
 
-//TODO optimization for middle
+
 void insertNode(freeIndexesList* list, node* newNode) {
     if (list->head == NULL) {
         list->head = newNode;

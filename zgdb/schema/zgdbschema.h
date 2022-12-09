@@ -19,19 +19,28 @@ typedef struct documentSchema {
     element* elements;
 } documentSchema;
 
+typedef enum addStatus {
+    ADD_OK = 0,
+    NAME_EXISTS,
+    SCHEMA_OVERFLOW
+} addStatus;
+
 /*
  * Функция для инициализации схемы
  */
 documentSchema initSchema(size_t capacity);
 
+/*
+ * Функция для удаления схемы
+ */
 void destroySchema(documentSchema* schema);
 
 /*
  * Функции для расширения схемы
  */
-void addIntToSchema(documentSchema* schema, char* key, int32_t initValue);
-void addDoubleToSchema(documentSchema* schema, char* key, double initValue);
-void addBooleanToSchema(documentSchema* schema, char* key, uint8_t initValue);
-void addTextToSchema(documentSchema* schema, char* key, char* initValue);
+addStatus addIntToSchema(documentSchema* schema, char* key, int32_t initValue);
+addStatus addDoubleToSchema(documentSchema* schema, char* key, double initValue);
+addStatus addBooleanToSchema(documentSchema* schema, char* key, uint8_t initValue);
+addStatus addTextToSchema(documentSchema* schema, char* key, char* initValue);
 
 #endif

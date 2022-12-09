@@ -145,40 +145,60 @@ void del(document document, zgdbFile* file) {
     }
 }
 
-//TODO FIX ROOT
 void deleteDocument(zgdbFile* file, document doc) {
     documentHeader parentHeader = getDocumentHeader(file, doc.indexParent);
+    document parent;
+    parent.header = parentHeader;
+    parent.isRoot = isRootDocumentHeader(parentHeader);
+    parent.indexParent = 0;//it doesn't matter
 
-    if(parentHeader.indexSon == doc.header.indexAttached) {
-        parentHeader.indexSon = doc.header.indexBrother;
-        off_t i = getIndex(file, parentHeader.indexAttached).offset;
-        fseeko(file->file, i, SEEK_SET);
-        fwrite(&parentHeader, sizeof(documentHeader), 1, file->file);
-    } else {
-        documentHeader temp = getDocumentHeader(file, parentHeader.indexSon);
-        documentHeader prev = temp;
-        while(temp.indexBrother != 0) {
-            if(temp.indexAttached == doc.header.indexAttached) {
-                break;
-            }
-            temp = getDocumentHeader(file, temp.indexBrother);
-            prev = temp;
-        }
-        prev.indexBrother = temp.indexBrother;
-        off_t i = getIndex(file, prev.indexAttached).offset;
-        fseeko(file->file, i, SEEK_SET);
-        fwrite(&prev, sizeof(documentHeader), 1, file->file);
+    resultList pList = createResultList();
+    insertResult(&pList, parent);
+
+    document tempD;
+    documentHeader tempHeader;
+    uint64_t tempIndex = parentHeader.indexSon;
+    while(tempIndex != 0) {
+        tempHeader = getDocumentHeader(file, tempIndex);
+        tempD.header = tempHeader;
+        tempD.isRoot = isRootDocumentHeader(tempHeader);
+        tempD.indexParent = doc.header.indexAttached;
+        tempIndex = tempHeader.indexBrother;
+        insertResult(&pList, tempD);
+        if(doc.header.indexAttached == tempHeader.indexAttached)
+            break;
     }
 
+    result* forDelete = pList.tail;
+    result* par = pList.head;
+
+    if(par->document.header.indexSon == forDelete->document.header.indexAttached) {
+        document p = par->document;
+        p.header.indexSon = forDelete->document.header.indexBrother;
+        off_t i = getIndex(file, p.header.indexAttached).offset;
+        fseeko(file->file, i, SEEK_SET);
+        fwrite(&p.header, sizeof(documentHeader), 1, file->file);
+    } else {
+        result* prev = forDelete->prev;
+        document p = prev->document;
+        p.header.indexBrother = forDelete->document.header.indexBrother;
+        off_t i = getIndex(file, p.header.indexAttached).offset;
+        fseeko(file->file, i, SEEK_SET);
+        fwrite(&p.header, sizeof(documentHeader), 1, file->file);
+    }
+    del(doc, file);
+    destroyResultList(&pList);
+    //delete subtree
     if(doc.header.indexSon != 0) {
         document child;
         documentHeader childHeader = getDocumentHeader(file, doc.header.indexSon);
         child.header = childHeader;
         child.isRoot = isRootDocumentHeader(childHeader);
-        child.indexParent = doc.indexParent;
+        child.indexParent = doc.header.indexAttached;
         forEachDocument(file, del, child);
     }
 
+    //delete toast list
     if(doc.header.firstToastIndex != 0) {
         uint64_t order = doc.header.firstToastIndex;
         zgdbIndex indexToast;
@@ -192,8 +212,6 @@ void deleteDocument(zgdbFile* file, document doc) {
             order = temp.nextToastIndex;
         }
     }
-
-    del(doc, file);
 }
 
 void forEachDocument(zgdbFile* file, void (* consumer)(document, zgdbFile*), document start) {

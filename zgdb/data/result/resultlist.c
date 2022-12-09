@@ -42,3 +42,11 @@ void printResultList(resultList* list) {
         temp = temp->next;
     }
 }
+
+result* getNextOf(result* of) {
+    return of->next;
+}
+
+result* getPrevOf(result* of) {
+    return of->prev;
+}

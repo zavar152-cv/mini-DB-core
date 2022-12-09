@@ -23,6 +23,10 @@ typedef struct resultList {
 
 resultList createResultList();
 
+result* getNextOf(result* of);
+
+result* getPrevOf(result* of);
+
 void destroyResultList(resultList* list);
 
 void insertResult(resultList* list, document document);

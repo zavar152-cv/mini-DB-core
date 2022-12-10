@@ -2,10 +2,10 @@
 #include "zgdbindex.h"
 
 uint64_t createIndex(zgdbFile* file) {
-    return createIndexes(file, 1);
+    return createIndexes(file, 1, false);
 }
 
-uint64_t createIndexes(zgdbFile* file, uint64_t n) {
+uint64_t createIndexes(zgdbFile* file, uint64_t n, bool expand) {
     munmap(file->pIndexesMmap, file->zgdbHeader.indexCount * sizeof(zgdbIndex));
     zgdbIndex index[n];
     for (int i = 0; i < n; ++i) {
@@ -16,9 +16,8 @@ uint64_t createIndexes(zgdbFile* file, uint64_t n) {
     fseeko(file->file, offset, SEEK_SET);
     fwrite(&index, sizeof(zgdbIndex), n, file->file);
     file->zgdbHeader.indexCount += n;
-    file->zgdbHeader.fileSize += (off_t) (n * sizeof(zgdbIndex));
-    printf("Index size: %llu\n", sizeof(zgdbIndex));
-    printf("Sum size: %llu\n", n * sizeof(zgdbIndex));
+    if(!expand)
+        file->zgdbHeader.fileSize += (off_t) (n * sizeof(zgdbIndex));
     saveHeader(file);
     file->pIndexesMmap = (char *) mmap(NULL, file->zgdbHeader.indexCount * sizeof(zgdbIndex),
                                         PROT_READ | PROT_WRITE,
@@ -58,6 +57,16 @@ bool killIndex(zgdbFile* file, uint64_t order) {
     if(pIndex[order].flag != INDEX_ALIVE)
         return false;
     pIndex[order].flag = INDEX_DEAD;
+    msync(file->pIndexesMmap, file->zgdbHeader.indexCount * sizeof(zgdbIndex), MS_ASYNC);
+    return true;
+}
+
+bool updateOffset(zgdbFile* file, uint64_t indexOrder, off_t offset) {
+    if (indexOrder > file->zgdbHeader.indexCount - 1) {
+        return false;
+    }
+    zgdbIndex* pIndex = (zgdbIndex*) file->pIndexesMmap;
+    pIndex[indexOrder].offset = offset;
     msync(file->pIndexesMmap, file->zgdbHeader.indexCount * sizeof(zgdbIndex), MS_ASYNC);
     return true;
 }

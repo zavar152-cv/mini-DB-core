@@ -11,7 +11,8 @@
 #include "data/iterator/dociterator.h"
 
 #define INDEX_INITIAL_CAPACITY 20
-#define INDEX_MULTIPLIER 2
+#define INDEX_MULTIPLIER 4
+#define COPY_BUFFER_SIZE 64
 
 typedef enum updateElementStatus {
     UPDATE_OK = 0,

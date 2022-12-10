@@ -13,7 +13,7 @@ void createRootDocument(zgdbFile* file, off_t offset);
 zgdbFile* init(const char* path) {
     zgdbFile* pFile = loadOrCreateZgdbFile(path);
     if (pFile->zgdbHeader.indexCount == 0) {
-        createIndexes(pFile, INDEX_INITIAL_CAPACITY);
+        createIndexes(pFile, INDEX_INITIAL_CAPACITY, false);
         off_t offset = (off_t) (pFile->zgdbHeader.indexCount * sizeof(zgdbIndex) + sizeof(zgdbHeader));
         createRootDocument(pFile, offset);
         attachIndexToBlock(pFile, 0, offset);
@@ -63,6 +63,60 @@ void printDocumentElements(zgdbFile* file, document document) {
     }
 }
 
+void expandIndexes(zgdbFile* file) {
+    uint64_t reqSize = INDEX_MULTIPLIER * INDEX_INITIAL_CAPACITY * sizeof(zgdbIndex);
+    uint64_t currentFreeSize = file->zgdbHeader.betweenSpace;
+    off_t nextBlock = (off_t) (sizeof(zgdbHeader) + (file->zgdbHeader.indexCount * sizeof(zgdbIndex)) + file->zgdbHeader.betweenSpace);
+
+    while(currentFreeSize < reqSize) {
+        fseeko(file->file, nextBlock, SEEK_SET);
+        uint8_t blockType;
+        uint64_t bufSize;
+        uint64_t indexOrderToUpdate;
+        fread(&blockType, sizeof(uint8_t), 1, file->file);
+        fseeko(file->file, nextBlock, SEEK_SET);
+        if(blockType == DOCUMENT) {
+            documentHeader header;
+            fread(&header, sizeof(documentHeader), 1, file->file);
+            currentFreeSize += header.size;
+            bufSize = header.size;
+            indexOrderToUpdate = header.indexAttached;
+        } else if(blockType == TOAST) {
+            toast toastBlock;
+            fread(&toastBlock, sizeof(toast), 1, file->file);
+            currentFreeSize += toastBlock.capacity;
+            bufSize = toastBlock.capacity;
+            indexOrderToUpdate = toastBlock.indexAttached;
+        }
+        char buffer[bufSize];
+        memset(&buffer, 0, bufSize);
+        fseeko(file->file, nextBlock, SEEK_SET);
+        fread(&buffer, sizeof(char), bufSize, file->file);
+        fseeko(file->file, (off_t) file->zgdbHeader.fileSize, SEEK_SET);
+        fwrite(&buffer, sizeof(char), bufSize, file->file);
+        updateOffset(file, indexOrderToUpdate, (off_t) file->zgdbHeader.fileSize);
+        file->zgdbHeader.fileSize += bufSize;
+        saveHeader(file);
+        nextBlock += (off_t) bufSize;
+    }
+
+    div_t divRes = div((int) currentFreeSize, sizeof(zgdbIndex));
+    int newIndexesCount = divRes.quot;
+    if(divRes.rem >= sizeof(zgdbIndex)) {
+        printf("between space is bigger than size of index\n");
+    }
+    file->zgdbHeader.betweenSpace = (uint8_t) divRes.rem;
+    saveHeader(file);
+
+    uint64_t start = file->zgdbHeader.indexCount;
+    uint64_t end = file->zgdbHeader.indexCount + newIndexesCount;
+    for (uint64_t i = start; i < end; ++i) {
+        insertNewIndex(&(file->freeList), i);
+    }
+
+    createIndexes(file, newIndexesCount, true);
+}
+
 createStatus createDocument(zgdbFile* file, const char* name, documentSchema* schema, document parent) {
     documentHeader parentHeader = getDocumentHeader(file, parent.header.indexAttached);
     off_t docSize = sizeof(documentHeader);
@@ -71,8 +125,9 @@ createStatus createDocument(zgdbFile* file, const char* name, documentSchema* sc
         return OUT_OF_INDEX;
     }
 
-    if(file->freeList.newIndexesCount <= INDEX_INITIAL_CAPACITY/4) {
+    if(file->freeList.newIndexesCount <= INDEX_INITIAL_CAPACITY/8) {
         printf("Needed to expand indexes\n");
+        expandIndexes(file);
     }
 
     docSize += schema->sizeOfElements;

@@ -40,7 +40,7 @@ uint64_t createIndex(zgdbFile* file);
  * Функция создания нескольких индексов в файле.
  * Возвращает indexNumber из заголовка при неудаче
  */
-uint64_t createIndexes(zgdbFile* file, uint64_t n);
+uint64_t createIndexes(zgdbFile* file, uint64_t n, bool expand);
 
 /*
  * Функция получения индекса по его порядковому номеру.

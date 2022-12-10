@@ -83,7 +83,9 @@ addStatus addTextToSchema(documentSchema* schema, char* key, char* initValue) {
     int chunks = divRes.quot;
     if(divRes.rem != 0)
         chunks++;
+#ifdef DEBUG_OUTPUT
     printf("Chunks schema: %d\n", chunks);
+#endif
     schema->minToastCapacity += chunks;
     schema->size++;
     schema->sizeOfElements += sizeof(uint8_t) + 13 * sizeof(char) + sizeof(firstTextChunk);

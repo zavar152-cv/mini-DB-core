@@ -103,7 +103,9 @@ void expandIndexes(zgdbFile* file) {
     div_t divRes = div((int) currentFreeSize, sizeof(zgdbIndex));
     int newIndexesCount = divRes.quot;
     if(divRes.rem >= sizeof(zgdbIndex)) {
+#ifdef DEBUG_OUTPUT
         printf("between space is bigger than size of index\n");
+#endif
     }
     file->zgdbHeader.betweenSpace = (uint8_t) divRes.rem;
     saveHeader(file);
@@ -126,7 +128,9 @@ createStatus createDocument(zgdbFile* file, const char* name, documentSchema* sc
     }
 
     if(file->freeList.newIndexesCount <= INDEX_INITIAL_CAPACITY/8) {
+#ifdef DEBUG_OUTPUT
         printf("Needed to expand indexes\n");
+#endif
         expandIndexes(file);
     }
 
@@ -136,11 +140,11 @@ createStatus createDocument(zgdbFile* file, const char* name, documentSchema* sc
     if(schema->reqToast) {
         relevantIndexMeta* pRelevantIndexMetaToast = findRelevantIndex(&file->freeList, 2 * schema->minToastCapacity * (sizeof(uint8_t) + sizeof(textChunk)));
         zgdbIndex indexToAttachToast = getIndex(file, pRelevantIndexMetaToast->indexOrder);
-        off_t offsetToast = file->zgdbHeader.fileSize;
+        off_t offsetToast = (off_t) file->zgdbHeader.fileSize;
         if(indexToAttachToast.flag == INDEX_DEAD)
             offsetToast = indexToAttachToast.offset;
         else if(indexToAttachToast.flag == INDEX_NEW)
-            offsetToast = file->zgdbHeader.fileSize;
+            offsetToast = (off_t) file->zgdbHeader.fileSize;
         fseeko(file->file, offsetToast, SEEK_SET);
         uint64_t cap = pRelevantIndexMetaToast->blockSize == 0 ? 2*schema->minToastCapacity*(sizeof(uint8_t) + sizeof(textChunk)) + sizeof(toast) : pRelevantIndexMetaToast->blockSize;
         toast toastBlock = {.blockType = TOAST, .capacity = cap,
@@ -160,11 +164,11 @@ createStatus createDocument(zgdbFile* file, const char* name, documentSchema* sc
     relevantIndexMeta* pRelevantIndexMeta = findRelevantIndex(&file->freeList, docSize);
     zgdbIndex indexToAttach = getIndex(file, pRelevantIndexMeta->indexOrder);
 
-    off_t offset = file->zgdbHeader.fileSize;
+    off_t offset = (off_t) file->zgdbHeader.fileSize;
     if(indexToAttach.flag == INDEX_DEAD)
         offset = indexToAttach.offset;
     else if(indexToAttach.flag == INDEX_NEW)
-        offset = file->zgdbHeader.fileSize;
+        offset = (off_t) file->zgdbHeader.fileSize;
 
     fseeko(file->file, offset, SEEK_SET);
     fseeko(file->file, sizeof(documentHeader), SEEK_CUR);
@@ -285,8 +289,10 @@ void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predi
     while (hasNextDoc(&iterator)) {
         document doc = nextDoc(file, &iterator);
         if ((*predicate)(doc)) {
+#ifdef DEBUG_OUTPUT
             printf("Found document: %s, ", doc.header.name);
             printf("parent: %llu\n", doc.indexParent);
+#endif
             insertResult(list, doc);
         }
     }
@@ -379,11 +385,11 @@ uint64_t createNewToast(zgdbFile* file, uint64_t size) {
     uint64_t newToastIndex = 0;
     relevantIndexMeta* pRelevantIndexMetaToast = findRelevantIndex(&file->freeList, size);
     zgdbIndex indexToAttachToast = getIndex(file, pRelevantIndexMetaToast->indexOrder);
-    off_t offsetToast = file->zgdbHeader.fileSize;
+    off_t offsetToast = (off_t) file->zgdbHeader.fileSize;
     if(indexToAttachToast.flag == INDEX_DEAD)
         offsetToast = indexToAttachToast.offset;
     else if(indexToAttachToast.flag == INDEX_NEW)
-        offsetToast = file->zgdbHeader.fileSize;
+        offsetToast = (off_t) file->zgdbHeader.fileSize;
     fseeko(file->file, offsetToast, SEEK_SET);
     uint64_t cap = pRelevantIndexMetaToast->blockSize == 0 ? size : pRelevantIndexMetaToast->blockSize;
     toast toastBlock = {.blockType = TOAST, .capacity = cap,
@@ -401,7 +407,6 @@ uint64_t createNewToast(zgdbFile* file, uint64_t size) {
     return newToastIndex;
 }
 
-//TODO return on update
 updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char* input) {
     if(strlen(key) > 13)
         return INVALID_NAME;
@@ -409,7 +414,7 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
     updateElementStatus statusToReturn = ELEMENT_NOT_FOUND;
     elementIterator iterator = createElIterator(file, &doc);
     elementEntry entry;
-    while(hasNextEl(&iterator)) {
+    while(hasNextEl(&iterator) && statusToReturn != UPDATE_OK) {
         entry = nextEl(file, &iterator, false);
         if(strcmp(key, entry.element.key) == 0) {
             switch (entry.element.type) {
@@ -454,7 +459,9 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
                         int chunks = divRes.quot;
                         if(divRes.rem != 0)
                             chunks++;
+#ifdef DEBUG_OUTPUT
                         printf("Chunks: %d\n", chunks);
+#endif
                         zgdbIndex indexToast = getIndex(file, doc.header.firstToastIndex);
                         toast tempToast;
                         fseeko(file->file, indexToast.offset, SEEK_SET);
@@ -501,7 +508,9 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
                             newLength++;
                             chunks++;
                         }
+#ifdef DEBUG_OUTPUT
                         printf("Chunks: %d\n", chunks);
+#endif
                         zgdbIndex indexToast = getIndex(file, doc.header.firstToastIndex);
                         toast tempToast;
                         fseeko(file->file, indexToast.offset, SEEK_SET);
@@ -560,29 +569,14 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
                             newLength++;
                             chunksNew++;
                         }
-
+#ifdef DEBUG_OUTPUT
                         printf("Chunks old: %d\n", chunks);
                         printf("Chunks new: %d\n", chunksNew);
+#endif
                         zgdbIndex indexCurrentToast = getIndex(file, doc.header.firstToastIndex);
                         toast tempCurrentToast;
                         fseeko(file->file, indexCurrentToast.offset, SEEK_SET);
                         fread(&tempCurrentToast, sizeof(toast), 1, file->file);
-
-                        uint64_t currentLeft = (tempCurrentToast.capacity - sizeof(toast)) / (sizeof(uint8_t) + sizeof(textChunk)) - tempCurrentToast.used;
-
-                        //TODO ???
-//                        while(currentLeft == 0) {
-//                            if(tempCurrentToast.nextToastIndex == 0) {
-//                                uint64_t i = createNewToast(file, tempCurrentToast.capacity);
-//                                tempCurrentToast.nextToastIndex = i;
-//                                fseeko(file->file, indexCurrentToast.offset, SEEK_SET);
-//                                fwrite(&tempCurrentToast, sizeof(toast), 1, file->file);
-//                            }
-//                            indexCurrentToast = getIndex(file, tempCurrentToast.nextToastIndex);
-//                            fseeko(file->file, indexCurrentToast.offset, SEEK_SET);
-//                            fread(&tempCurrentToast, sizeof(toast), 1, file->file);
-//                            currentLeft = (tempCurrentToast.capacity - sizeof(toast)) / (sizeof(uint8_t) + sizeof(textChunk)) - tempCurrentToast.used;
-//                        }
 
                         textChunk tempChunk;
                         uint8_t chunkType;
@@ -595,7 +589,9 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
                             fread(&chunkType, sizeof(uint8_t), 1, file->file);
                             fread(&tempChunk, sizeof(textChunk), 1, file->file);
                             nextOffset = tempChunk.nextOffset;
+#ifdef DEBUG_OUTPUT
                             printf("Current chunk (toast: %lu, offset: %ld)\n", tempChunk.toastIndex, tempChunk.nextOffset);
+#endif
                         }
 
                         if(chunksNew <= chunks) {
@@ -630,7 +626,9 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
                         } else {
                             uint64_t left = (tempCurrentToast.capacity - sizeof(toast)) / (sizeof(uint8_t) + sizeof(textChunk)) - tempCurrentToast.used;
                             int req = chunksNew - chunks;
+#ifdef DEBUG_OUTPUT
                             printf("Left in current toast: %lu, req: %d\n", left, req);
+#endif
                             if(left >= req) {
 
                                 nextOffset = firstChunk.offsetInToast;
@@ -688,7 +686,6 @@ updateElementStatus updateElement(zgdbFile* file, document doc, char* key, char*
                                 fseeko(file->file, indexCurrentToast.offset, SEEK_SET);
                                 fwrite(&tempCurrentToast, sizeof(toast), 1, file->file);
                             } else if(left < req) {
-                                //check if left == 0
 
                                 uint64_t newToastIndex = createNewToast(file, req*(sizeof(uint8_t) + sizeof(textChunk)) + tempCurrentToast.capacity);
 

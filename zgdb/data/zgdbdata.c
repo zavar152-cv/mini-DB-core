@@ -19,6 +19,7 @@ documentId generateId(off_t offset) {
     return id;
 }
 
+//@Deprecated
 off_t getElementSize(element cur) {
     off_t s = 0;
     s += sizeof(uint8_t);
@@ -38,8 +39,9 @@ off_t getElementSize(element cur) {
             int chunks = divRes.quot;
             if(divRes.rem != 0)
                 chunks++;
+#ifdef DEBUG_OUTPUT
             printf("Chunks: %d\n", chunks);
-
+#endif
             s += sizeof(firstTextChunk);
             break;
         }
@@ -66,8 +68,9 @@ off_t writeElement(zgdbFile* file, element cur, uint64_t firstToastIndex) {
             int chunks = divRes.quot;
             if(divRes.rem != 0)
                 chunks++;
-            printf("Chunks: %d\n", chunks);
-
+#ifdef DEBUG_OUTPUT
+            printf("Write chunks: %d\n", chunks);
+#endif
             off_t rec = ftello(file->file);
             zgdbIndex indexToast = getIndex(file, firstToastIndex);
             toast tempToast;
@@ -113,6 +116,7 @@ off_t writeElement(zgdbFile* file, element cur, uint64_t firstToastIndex) {
     return ftello(file->file) - t;
 }
 
+//only for debug
 element* readElement(zgdbFile* file, document doc) {
     element* cur = malloc(sizeof(element));
     fread(&cur->type, sizeof(uint8_t), 1, file->file);
@@ -136,7 +140,9 @@ element* readElement(zgdbFile* file, document doc) {
             int chunks = divRes.quot;
             if(divRes.rem != 0)
                 chunks++;
-            printf("Chunks: %d\n", chunks);
+#ifdef DEBUG_OUTPUT
+            printf("Read chunks: %d\n", chunks);
+#endif
             zgdbIndex indexToast = getIndex(file, doc.header.firstToastIndex);
             toast tempToast;
             fseeko(file->file, indexToast.offset, SEEK_SET);

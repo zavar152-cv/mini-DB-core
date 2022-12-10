@@ -21,8 +21,10 @@ uint8_t getVersion() {
 }
 
 void writeFreelist(zgdbFile* file) {
-    fseeko(file->file, file->zgdbHeader.fileSize, SEEK_SET);
+    fseeko(file->file, (off_t) file->zgdbHeader.fileSize, SEEK_SET);
+#ifdef DEBUG_OUTPUT
     printf("Seek: %lld\n", ftello(file->file));
+#endif
     fwrite(&(file->freeList), sizeof(freeIndexesList), 1, file->file);
     node* temp = file->freeList.head;
     while (temp != NULL) {
@@ -32,8 +34,10 @@ void writeFreelist(zgdbFile* file) {
 }
 
 void readFreeList(zgdbFile* file) {
-    fseeko(file->file, file->zgdbHeader.fileSize, SEEK_SET);
+    fseeko(file->file, (off_t) file->zgdbHeader.fileSize, SEEK_SET);
+#ifdef DEBUG_OUTPUT
     printf("Seek: %lld\n", ftello(file->file));
+#endif
     freeIndexesList list;
     fread(&list, sizeof(freeIndexesList), 1, file->file);
     list.head = NULL;
@@ -78,7 +82,6 @@ zgdbFile* loadOrCreateZgdbFile(const char* path) {
         FILE* file = fopen(path, "wb+");
         zgdbHeader header;
         header.indexCount = 0;
-        //header.freeListOffset = 0;
         header.zgdbType = getZgdbFormat();
         header.betweenSpace = 0;
         header.version = 1;

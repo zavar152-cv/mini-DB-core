@@ -20,8 +20,10 @@ bool hasNextDoc(documentIterator* iterator) {
 document nextDoc(zgdbFile* file, documentIterator* iterator) {
     document toReturn;
     iterator->header = getDocumentHeader(file, iterator->next.order);
+#ifdef DEBUG_OUTPUT
     printf("Visited document: %s, ", iterator->header.name);
     printf("parent: %llu (index: %llu)\n", iterator->next.orderParent, iterator->next.order);
+#endif
     iterator->document.header = iterator->header;
     iterator->document.isRoot = isRootDocumentHeader(iterator->header);
     iterator->document.indexParent = iterator->next.orderParent;

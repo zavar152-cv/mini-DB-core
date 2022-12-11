@@ -20,6 +20,6 @@ void destroyDocIterator(documentIterator* iterator);
 
 bool hasNextDoc(documentIterator* iterator);
 
-document nextDoc(zgdbFile* file, documentIterator* iterator);
+document nextDoc(zgdbFile* file, documentIterator* iterator, uint64_t* depth);
 
 #endif

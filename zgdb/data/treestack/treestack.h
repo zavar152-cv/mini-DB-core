@@ -15,6 +15,7 @@
 typedef struct nodeEntry {
     uint64_t order;
     uint64_t orderParent;
+    uint64_t depth;
 } nodeEntry;
 
 typedef struct treeStack {

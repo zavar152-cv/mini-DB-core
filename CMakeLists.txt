@@ -11,7 +11,7 @@ set(GENERAL_SRC zgdb/format/zgdbfile.c zgdb/format/zgdbfile.h zgdb/index/zgdbind
         zgdb/data/treestack/treestack.c zgdb/data/treestack/treestack.h zgdb/data/iterator/eliterator.c zgdb/data/iterator/eliterator.h
         zgdb/data/iterator/dociterator.c zgdb/data/iterator/dociterator.h)
 
-set(MAIN tests/expand/expandtest.c)
+set(MAIN tests/depth/depthtest.c)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mno-ms-bitfields")
 if (WIN32)
     set(WIN_SRC lib/mman-win32/mman.c lib/mman-win32/mman.h lib/fmemopen_windows/libfmemopen.c lib/fmemopen_windows/libfmemopen.h)

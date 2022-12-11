@@ -277,8 +277,9 @@ void deleteDocument(zgdbFile* file, document doc) {
 
 void forEachDocument(zgdbFile* file, void (* consumer)(document, zgdbFile*), document start) {
     documentIterator iterator = createDocIterator(file, start.header.indexAttached, start.indexParent);
+    uint64_t depth = 0;
     while (hasNextDoc(&iterator)) {
-        document doc = nextDoc(file, &iterator);
+        document doc = nextDoc(file, &iterator, &depth);
         (*consumer) (doc, file);
     }
     destroyDocIterator(&iterator);
@@ -286,8 +287,10 @@ void forEachDocument(zgdbFile* file, void (* consumer)(document, zgdbFile*), doc
 
 void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predicate)(document), resultList* list) {
     documentIterator iterator = createDocIterator(file, order, orderParent);
+    uint64_t depth = 0;
     while (hasNextDoc(&iterator)) {
-        document doc = nextDoc(file, &iterator);
+        document doc = nextDoc(file, &iterator, &depth);
+        printf("Current depth: %lu, for: %s\n\n", depth, doc.header.name);
         if ((*predicate)(doc)) {
 #ifdef DEBUG_OUTPUT
             printf("Found document: %s, ", doc.header.name);

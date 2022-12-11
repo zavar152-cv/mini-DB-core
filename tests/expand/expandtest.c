@@ -1,3 +1,4 @@
+#define DEBUG_OUTPUT
 #include "zgdb.h"
 
 bool checkName(document d) {

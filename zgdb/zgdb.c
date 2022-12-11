@@ -301,14 +301,15 @@ void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, path p, resul
 
     bool found = false;
     for (size_t i = 0; i < p.size; ++i) {
-        step s = p.steps[depth - 1];//maybe replace with i
+        step s = p.steps[i];
         if(s.pType == ABSOLUTE_PATH) {
             resultList tempContextList = createResultList();
             result* tempRes = contextList.head;
             while (tempRes != NULL) {
                 documentIterator iterator = createDocIterator(file, tempRes->document.header.indexAttached, tempRes->document.indexParent, depth);
                 document temp;
-                while (hasNextDoc(&iterator) && (depth - 1) == i) {
+                uint64_t prevDepth = depth;
+                while (hasNextDoc(&iterator) && depth == prevDepth) {//change level checking - compare prev and cur depth
                     temp = nextDoc(file, &iterator, &depth);
                     if(strcmp(temp.header.name, s.stepName) == 0) {//TODO needs to apply predicate and check sType
                         if(temp.header.indexSon != 0) {
@@ -337,6 +338,7 @@ void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, path p, resul
         } else if(s.pType == RELATIVE_PATH) {
 
             //same as abs but without depth checking
+            //as I understand, depth should be zero (one) after this step
             if(i == p.size - 1) {
 
             }

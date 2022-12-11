@@ -1,10 +1,10 @@
 #include "dociterator.h"
 
-documentIterator createDocIterator(zgdbFile* file, uint64_t order, uint64_t orderParent) {
+documentIterator createDocIterator(zgdbFile* file, uint64_t order, uint64_t orderParent, uint64_t startDepth) {
     documentIterator iterator;
     iterator.pStack = createStack();
     iterator.stop = false;
-    nodeEntry next = {.order = order, .orderParent = orderParent, .depth = 0};
+    nodeEntry next = {.order = order, .orderParent = orderParent, .depth = startDepth};
     iterator.next = next;
     return iterator;
 }

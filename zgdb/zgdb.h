@@ -9,6 +9,7 @@
 #include "data/treestack/treestack.h"
 #include "data/iterator/eliterator.h"
 #include "data/iterator/dociterator.h"
+#include "data/filter/zgdbfilter.h"
 
 #define INDEX_INITIAL_CAPACITY 20
 #define INDEX_MULTIPLIER 4
@@ -53,9 +54,9 @@ void forEachDocument(zgdbFile* file, void (* consumer)(document, zgdbFile*), doc
 
 void printDocumentElements(zgdbFile* file, document document);
 
-resultList findIfFromRoot(zgdbFile* file, bool (* predicate)(document));
+resultList findIfFromRoot(zgdbFile* file, path p);
 
-resultList findIfFromDocument(zgdbFile* file, bool (* predicate)(document), document document);
+resultList findIfFromDocument(zgdbFile* file, path p, document document);
 
 resultList join(zgdbFile* file, document parent);
 

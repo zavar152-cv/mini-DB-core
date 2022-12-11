@@ -276,7 +276,7 @@ void deleteDocument(zgdbFile* file, document doc) {
 }
 
 void forEachDocument(zgdbFile* file, void (* consumer)(document, zgdbFile*), document start) {
-    documentIterator iterator = createDocIterator(file, start.header.indexAttached, start.indexParent);
+    documentIterator iterator = createDocIterator(file, start.header.indexAttached, start.indexParent, 0);
     uint64_t depth = 0;
     while (hasNextDoc(&iterator)) {
         document doc = nextDoc(file, &iterator, &depth);
@@ -285,21 +285,64 @@ void forEachDocument(zgdbFile* file, void (* consumer)(document, zgdbFile*), doc
     destroyDocIterator(&iterator);
 }
 
-void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, bool (* predicate)(document), resultList* list) {
-    documentIterator iterator = createDocIterator(file, order, orderParent);
+void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, path p, resultList* finalList) {
+    //find root document (can be changed)
+    documentIterator rootIterator = createDocIterator(file, order, orderParent, 0);
     uint64_t depth = 0;
-    while (hasNextDoc(&iterator)) {
-        document doc = nextDoc(file, &iterator, &depth);
-        printf("Current depth: %lu, for: %s\n\n", depth, doc.header.name);
-        if ((*predicate)(doc)) {
-#ifdef DEBUG_OUTPUT
-            printf("Found document: %s, ", doc.header.name);
-            printf("parent: %llu\n", doc.indexParent);
-#endif
-            insertResult(list, doc);
+    resultList contextList = createResultList();
+    if (hasNextDoc(&rootIterator)) {
+        nextDoc(file, &rootIterator, &depth);//skip root
+    }
+    if (hasNextDoc(&rootIterator)) {
+        insertResult(&contextList, nextDoc(file, &rootIterator, &depth));
+        printf("Current depth: %lu, for: %s\n\n", depth, contextList.head->document.header.name);
+    }
+    destroyDocIterator(&rootIterator);
+
+    bool found = false;
+    for (size_t i = 0; i < p.size; ++i) {
+        step s = p.steps[depth - 1];//maybe replace with i
+        if(s.pType == ABSOLUTE_PATH) {
+            resultList tempContextList = createResultList();
+            result* tempRes = contextList.head;
+            while (tempRes != NULL) {
+                documentIterator iterator = createDocIterator(file, tempRes->document.header.indexAttached, tempRes->document.indexParent, depth);
+                document temp;
+                while (hasNextDoc(&iterator) && (depth - 1) == i) {
+                    temp = nextDoc(file, &iterator, &depth);
+                    if(strcmp(temp.header.name, s.stepName) == 0) {//TODO needs to apply predicate and check sType
+                        if(temp.header.indexSon != 0) {
+                            document child;
+                            child.header = getDocumentHeader(file, temp.header.indexSon);
+                            child.indexParent = temp.header.indexAttached;
+                            child.isRoot = false;
+                            insertResult(&tempContextList, child);
+                        }
+                        if(i == p.size - 1) {
+                            insertResult(finalList, temp);
+                        }
+                        found = true;
+                    }
+                }
+                if(!found) {
+                    printf("Not found\n");
+                } else {
+                    printf("Found\n");
+                }
+                destroyDocIterator(&iterator);
+                tempRes = tempRes->next;
+            }
+            destroyResultList(&contextList);
+            contextList = tempContextList;
+        } else if(s.pType == RELATIVE_PATH) {
+
+            //same as abs but without depth checking
+            if(i == p.size - 1) {
+
+            }
         }
     }
-    destroyDocIterator(&iterator);
+    destroyResultList(&contextList);
 }
 
 resultList join(zgdbFile* file, document parent) {
@@ -320,15 +363,15 @@ resultList join(zgdbFile* file, document parent) {
     return pList;
 }
 
-resultList findIfFromRoot(zgdbFile* file, bool (* predicate)(document)) {
+resultList findIfFromRoot(zgdbFile* file, path p) {
     resultList pList = createResultList();
-    findIf0(file, 0, 0, predicate, &pList);
+    findIf0(file, 0, 0, p, &pList);
     return pList;
 }
 
-resultList findIfFromDocument(zgdbFile* file, bool (* predicate)(document), document document) {
+resultList findIfFromDocument(zgdbFile* file, path p, document document) {
     resultList pList = createResultList();
-    findIf0(file, document.header.indexAttached, document.indexParent, predicate, &pList);
+    findIf0(file, document.header.indexAttached, document.indexParent, p, &pList);
     return pList;
 }
 

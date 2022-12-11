@@ -22,6 +22,7 @@ void insertResult(resultList* list, document document) {
     newResult->document = document;
     newResult->next = NULL;
     newResult->prev = NULL;
+    list->size++;
 
     if (list->head == NULL) {
         list->head = newResult;

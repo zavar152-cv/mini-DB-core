@@ -14,7 +14,7 @@ typedef struct documentIterator {
     nodeEntry temp;
 } documentIterator;
 
-documentIterator createDocIterator(zgdbFile* file, uint64_t order, uint64_t orderParent);
+documentIterator createDocIterator(zgdbFile* file, uint64_t order, uint64_t orderParent, uint64_t startDepth);
 
 void destroyDocIterator(documentIterator* iterator);
 

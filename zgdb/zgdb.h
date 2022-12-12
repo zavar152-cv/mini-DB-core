@@ -12,7 +12,7 @@
 #include "data/iterator/dociterator.h"
 #include "data/filter/zgdbfilter.h"
 
-#define INDEX_INITIAL_CAPACITY 20
+#define INDEX_INITIAL_CAPACITY 50000
 #define INDEX_MULTIPLIER 4
 #define COPY_BUFFER_SIZE 64
 

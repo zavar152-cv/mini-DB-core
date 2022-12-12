@@ -17,7 +17,7 @@ zgdbFile* init(const char* path) {
         off_t offset = (off_t) (pFile->zgdbHeader.indexCount * sizeof(zgdbIndex) + sizeof(zgdbHeader));
         createRootDocument(pFile, offset);
         attachIndexToBlock(pFile, 0, offset);
-        for (int i = 1; i < INDEX_INITIAL_CAPACITY; ++i) {
+        for (size_t i = 1; i < INDEX_INITIAL_CAPACITY; ++i) {
             insertNewIndex(&(pFile->freeList), i);
         }
     }

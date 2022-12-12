@@ -56,11 +56,26 @@ int main() {
         step s;
         strcpy(s.stepName, "test1");
         s.pType = ABSOLUTE_PATH;
+        s.sType = DOCUMENT_STEP;
+        s.pred = (predicate*) malloc(sizeof(predicate));
+        s.pred->isInverted = false;
+        s.pred->type = BY_ELEMENT_VALUE;
+        s.pred->logOp = NONE;
+        s.pred->nextPredicate = NULL;
+        checkType byValue = {.input = "-1", .operator = EQUALS, .key = "int9"};
+        s.pred->byValue = byValue;
         p.steps[0] = s;
-        resultList list = findIfFromRoot(pFile, p);
+        findIfResult ifResult = findIfFromRoot(pFile, p);
+
+        resultList list = ifResult.documentList;
 
         createDocument(pFile, "test5", &schema2, list.head->document);
-        createDocument(pFile, "test6", &schema2, list.head->document);
+        documentSchema schema3 = initSchema(3);
+        addBooleanToSchema(&schema3, "bool1", 1);
+        addDoubleToSchema(&schema3, "double6", 4.5);
+        addIntToSchema(&schema3, "int9", -1);
+        destroySchema(&schema3);
+        createDocument(pFile, "test1", &schema3, list.head->document);
         createDocument(pFile, "test5", &schema2, list.head->document);
         destroyResultList(&list);
         path p1;
@@ -69,41 +84,69 @@ int main() {
         step s1;
         strcpy(s1.stepName, "test1");
         step s2;
-        strcpy(s2.stepName, "test5");
+        strcpy(s2.stepName, "int9");
         s1.pType = ABSOLUTE_PATH;
+        s1.sType = DOCUMENT_STEP;
+        s1.pred = NULL;
         s2.pType = ABSOLUTE_PATH;
+        s2.sType = ELEMENT_STEP;
+        s2.pred = NULL;
         p1.steps[0] = s1;
         p1.steps[1] = s2;
-        list = findIfFromRoot(pFile, p1);
-        destroyResultList(&list);
+        ifResult = findIfFromRoot(pFile, p1);
 
-//        list = findIfFromRoot(pFile, checkName);
-//        document doc = list.head->document;
-//        destroyResultList(&list);
-//
-//        createDocument(pFile, "test6", &schema2, doc);
-//        createDocument(pFile, "test7", &schema2, doc);
-//
-//        list = findIfFromRoot(pFile, checkName2);
-//        doc = list.head->document;
-//        destroyResultList(&list);
-//
-//        createDocument(pFile, "test4", &schema2, doc);
-//        createDocument(pFile, "test5", &schema2, doc);
-//
-//        list = findIfFromRoot(pFile, checkName3);
-//        doc = list.head->document;
-//        destroyResultList(&list);
-//
-//        createDocument(pFile, "test101", &schema2, doc);
+        eLresultList elist = ifResult.elementList;
+        destroyElResultList(&elist);
+
+
 
         destroySchema(&schema2);
     }
 
-//    printf("After creation:\n");
-//    list = findIfFromRoot(pFile, isRootDocument);
-//    rootDoc = list.head->document;
-//    destroyResultList(&list);
+    path p;
+    p.size = 1;
+    p.steps = (step*) malloc(p.size * sizeof(step));
+    step s;
+    strcpy(s.stepName, "test1");
+    s.pType = RELATIVE_PATH;
+    s.sType = DOCUMENT_STEP;
+
+    predicate* second = (predicate*) malloc(sizeof(predicate));
+    second->nextPredicate = NULL;
+    second->logOp = AND;
+    second->type = BY_ELEMENT_VALUE;
+    second->isInverted = false;
+    checkType byValue0 = {.input = "1.5", .operator = EQUALS, .key = "double6"};
+    second->byValue = byValue0;
+
+    s.pred = (predicate*) malloc(sizeof(predicate));
+    s.pred->isInverted = false;
+    s.pred->type = BY_ELEMENT_VALUE;
+    s.pred->logOp = NONE;
+    s.pred->nextPredicate = second;
+    checkType byValue = {.input = "-2", .operator = NOT_EQUALS, .key = "int9"};
+    s.pred->byValue = byValue;
+    p.steps[0] = s;
+    findIfResult ifResult = findIfFromRoot(pFile, p);
+
+    resultList list = ifResult.documentList;
+
+    destroyResultList(&list);
+
+
+    path p1;
+    p1.size = 1;
+    p1.steps = (step*) malloc(p1.size * sizeof(step));
+    step s1;
+    strcpy(s1.stepName, "int9");
+    s1.pType = RELATIVE_PATH;
+    s1.sType = ELEMENT_STEP;
+    s1.pred = NULL;
+    p1.steps[0] = s1;
+    ifResult = findIfFromRoot(pFile, p1);
+
+    eLresultList elist = ifResult.elementList;
+    destroyElResultList(&elist);
 
     finish(pFile);
     return 0;

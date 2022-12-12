@@ -1,15 +1,23 @@
-#include "resultlist.h"
+#include "elresultlist.h"
 
-resultList createResultList() {
-    resultList list;
+eLresultList createElResultList() {
+    eLresultList list;
     list.head = NULL;
     list.tail = NULL;
     list.size = 0;
     return list;
 }
 
-void destroyResultList(resultList* list) {
-    result* temp;
+eLresult* getNextElOf(eLresult* of) {
+    return of->next;
+}
+
+eLresult* getPrevElOf(eLresult* of) {
+    return of->prev;
+}
+
+void destroyElResultList(eLresultList* list) {
+    eLresult* temp;
     while (list->head != NULL) {
         temp = list->head;
         list->head = list->head->next;
@@ -17,9 +25,10 @@ void destroyResultList(resultList* list) {
     }
 }
 
-void insertResult(resultList* list, document document) {
-    result* newResult = (result*) malloc(sizeof(result));
+void insertElResult(eLresultList* list, document document, element el) {
+    eLresult* newResult = (eLresult*) malloc(sizeof(eLresult));
     newResult->document = document;
+    newResult->el = el;
     newResult->next = NULL;
     newResult->prev = NULL;
     list->size++;
@@ -36,18 +45,10 @@ void insertResult(resultList* list, document document) {
     list->tail = newResult;
 }
 
-void printResultList(resultList* list) {
-    result* temp = list->head;
+void printElResultList(eLresultList* list) {
+    eLresult* temp = list->head;
     while (temp != NULL) {
-        printf("%s\n", temp->document.header.name);
+        printf("Doc: %s, el: %s\n", temp->document.header.name, temp->el.key);
         temp = temp->next;
     }
-}
-
-result* getNextDocOf(result* of) {
-    return of->next;
-}
-
-result* getPrevDocOf(result* of) {
-    return of->prev;
 }

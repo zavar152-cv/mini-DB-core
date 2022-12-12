@@ -23,9 +23,9 @@ typedef struct resultList {
 
 resultList createResultList();
 
-result* getNextOf(result* of);
+result* getNextDocOf(result* of);
 
-result* getPrevOf(result* of);
+result* getPrevDocOf(result* of);
 
 void destroyResultList(resultList* list);
 

@@ -31,8 +31,7 @@ typedef enum stepType {
 typedef enum logOperator {
     NONE = 0,
     AND,
-    OR,
-    NOT
+    OR
 } logOperator;
 
 typedef enum compOperator {
@@ -64,6 +63,7 @@ typedef struct predicate predicate;
 
 typedef struct predicate {
     logOperator logOp;
+    bool isInverted;
     predicate* nextPredicate;
     enum predicateType type;
     union {
@@ -76,12 +76,21 @@ typedef struct step {
     pathType pType;
     char stepName[13];
     stepType sType;
-    predicate pred;
+    predicate* pred;
 } step;
 
 typedef struct path {
    step* steps;
    size_t size;
 } path;
+
+/*
+ * UNDEFINED for start of the search
+ */
+typedef enum resultType {
+    UNDEFINED_RESULT = 0,
+    DOCUMENT_RESULT,
+    ELEMENT_RESULT
+} resultType;
 
 #endif

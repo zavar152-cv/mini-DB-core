@@ -6,6 +6,7 @@
 #include "format/zgdbfile.h"
 #include "index/zgdbindex.h"
 #include "data/result/resultlist.h"
+#include "data/result/elresultlist.h"
 #include "data/treestack/treestack.h"
 #include "data/iterator/eliterator.h"
 #include "data/iterator/dociterator.h"
@@ -40,6 +41,12 @@ typedef enum str2doubleStatus {
     STR2DOUBLE_INCONVERTIBLE
 } str2doubleStatus;
 
+typedef struct findIfResult {
+    resultType type;
+    resultList documentList;
+    eLresultList elementList;
+} findIfResult;
+
 zgdbFile* init(const char* path);
 
 bool finish(zgdbFile* file);
@@ -54,9 +61,9 @@ void forEachDocument(zgdbFile* file, void (* consumer)(document, zgdbFile*), doc
 
 void printDocumentElements(zgdbFile* file, document document);
 
-resultList findIfFromRoot(zgdbFile* file, path p);
+findIfResult findIfFromRoot(zgdbFile* file, path p);
 
-resultList findIfFromDocument(zgdbFile* file, path p, document document);
+findIfResult findIfFromDocument(zgdbFile* file, path p, document document);
 
 resultList join(zgdbFile* file, document parent);
 

@@ -275,121 +275,6 @@ void deleteDocument(zgdbFile* file, document doc) {
     }
 }
 
-void forEachDocument(zgdbFile* file, void (* consumer)(document, zgdbFile*), document start) {
-    documentIterator iterator = createDocIterator(file, start.header.indexAttached, start.indexParent, 0);
-    uint64_t depth = 0;
-    while (hasNextDoc(&iterator)) {
-        document doc = nextDoc(file, &iterator, &depth);
-        (*consumer) (doc, file);
-    }
-    destroyDocIterator(&iterator);
-}
-
-void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, path p, resultList* finalList) {
-    //find root document (can be changed)
-    documentIterator rootIterator = createDocIterator(file, order, orderParent, 0);
-    uint64_t depth = 0;
-    resultList contextList = createResultList();
-    if (hasNextDoc(&rootIterator)) {
-        nextDoc(file, &rootIterator, &depth);//skip root
-    }
-    if (hasNextDoc(&rootIterator)) {
-        insertResult(&contextList, nextDoc(file, &rootIterator, &depth));
-        printf("Current depth: %lu, for: %s\n\n", depth, contextList.head->document.header.name);
-    }
-    destroyDocIterator(&rootIterator);
-
-    bool found = false;
-    for (size_t i = 0; i < p.size; ++i) {
-        step s = p.steps[i];
-        if(s.pType == ABSOLUTE_PATH) {
-            resultList tempContextList = createResultList();
-            result* tempRes = contextList.head;
-            while (tempRes != NULL) {
-                documentIterator iterator = createDocIterator(file, tempRes->document.header.indexAttached, tempRes->document.indexParent, depth);
-                document temp;
-                uint64_t prevDepth = depth;
-                while (hasNextDoc(&iterator) && depth == prevDepth) {//change level checking - compare prev and cur depth
-                    temp = nextDoc(file, &iterator, &depth);
-                    if(strcmp(temp.header.name, s.stepName) == 0) {//TODO needs to apply predicate and check sType
-                        if(temp.header.indexSon != 0) {
-                            document child;
-                            child.header = getDocumentHeader(file, temp.header.indexSon);
-                            child.indexParent = temp.header.indexAttached;
-                            child.isRoot = false;
-                            insertResult(&tempContextList, child);
-                        }
-                        if(i == p.size - 1) {
-                            insertResult(finalList, temp);
-                        }
-                        found = true;
-                    }
-                }
-                if(!found) {
-                    printf("Not found\n");
-                } else {
-                    printf("Found\n");
-                }
-                destroyDocIterator(&iterator);
-                tempRes = tempRes->next;
-            }
-            destroyResultList(&contextList);
-            contextList = tempContextList;
-        } else if(s.pType == RELATIVE_PATH) {
-
-            //same as abs but without depth checking
-            //as I understand, depth should be zero (one) after this step
-            if(i == p.size - 1) {
-
-            }
-        }
-    }
-    destroyResultList(&contextList);
-}
-
-resultList join(zgdbFile* file, document parent) {
-    resultList pList = createResultList();
-
-    document temp;
-    documentHeader tempHeader;
-    uint64_t tempIndex = parent.header.indexSon;
-    while(tempIndex != 0) {
-        tempHeader = getDocumentHeader(file, tempIndex);
-        temp.header = tempHeader;
-        temp.isRoot = isRootDocumentHeader(tempHeader);
-        temp.indexParent = parent.header.indexAttached;
-        tempIndex = tempHeader.indexBrother;
-        insertResult(&pList, temp);
-    }
-
-    return pList;
-}
-
-resultList findIfFromRoot(zgdbFile* file, path p) {
-    resultList pList = createResultList();
-    findIf0(file, 0, 0, p, &pList);
-    return pList;
-}
-
-resultList findIfFromDocument(zgdbFile* file, path p, document document) {
-    resultList pList = createResultList();
-    findIf0(file, document.header.indexAttached, document.indexParent, p, &pList);
-    return pList;
-}
-
-void createRootDocument(zgdbFile* file, off_t offset) {
-    fseeko(file->file, offset, SEEK_SET);
-    documentId id = generateId(offset);
-    documentHeader header = {.id = id, .size = sizeof(documentHeader), .capacity = sizeof(documentHeader),
-            .attrCount = 0, .indexAttached = 0, .indexBrother = 0,
-            .indexSon = 0, .name = "root", .firstToastIndex = 0, .blockType = DOCUMENT};
-
-    fwrite(&header, sizeof(documentHeader), 1, file->file);
-    file->zgdbHeader.fileSize += sizeof(documentHeader);
-    file->zgdbHeader.nodes++;
-    saveHeader(file);
-}
-
 str2intStatus str2int(int32_t *out, char *s) {
     char *end;
     if (s[0] == '\0' || isspace(s[0]))
@@ -427,6 +312,366 @@ void str2boolean(uint8_t *out, char *s) {
     } else {
         *out = 0;
     }
+}
+
+bool calculatePredicate(zgdbFile* file, document* temp, step s, uint64_t docNumber) {
+    if(s.pred == NULL)
+        return true;
+    
+    bool generalRes;
+
+    predicate* currentPredicate = s.pred;
+    while (currentPredicate != NULL) {
+        if(currentPredicate->type == BY_DOCUMENT_NUMBER) {
+            bool res = (currentPredicate->index == docNumber);
+            if(currentPredicate->isInverted)
+                res = !res;
+
+            if(currentPredicate->logOp == NONE)
+                generalRes = res;
+            else if(currentPredicate->logOp == AND)
+                generalRes = generalRes && res;
+            else if(currentPredicate->logOp == OR)
+                generalRes = generalRes || res;
+        } else if(currentPredicate->type == BY_ELEMENT_VALUE) {
+            bool res = false;
+            checkType chkType = currentPredicate->byValue;
+
+            elementIterator iterator = createElIterator(file, temp);
+            while(hasNextEl(&iterator)) {
+                element e = nextEl(file, &iterator, true).element;
+                if(strcmp(chkType.key, e.key) == 0) {
+                    if(e.type == TYPE_INT) {
+                        int32_t value;
+                        str2intStatus status = str2int(&value, chkType.input);
+                        if(status == STR2INT_SUCCESS) {
+                            switch (chkType.operator) {
+                                case EQUALS: {
+                                    res = (e.integerValue == value);
+                                    break;
+                                }
+                                case NOT_EQUALS: {
+                                    res = (e.integerValue != value);
+                                    break;
+                                }
+                                case GREATER: {
+                                    res = (e.integerValue > value);
+                                    break;
+                                }
+                                case LESS: {
+                                    res = (e.integerValue < value);
+                                    break;
+                                }
+                                case EQ_GREATER: {
+                                    res = (e.integerValue >= value);
+                                    break;
+                                }
+                                case EQ_LESS: {
+                                    res = (e.integerValue <= value);
+                                    break;
+                                }
+                                default: {
+                                    printf("Not supported for int\n");
+                                    break;
+                                }
+                            }
+                        } else {
+                            printf("str2int failed\n");
+                        }
+                    } else if(e.type == TYPE_BOOLEAN) {
+                        uint8_t value;
+                        str2boolean(&value, chkType.input);
+                        switch (chkType.operator) {
+                            case EQUALS: {
+                                res = (value == e.booleanValue);
+                                break;
+                            }
+                            case NOT_EQUALS: {
+                                res = (value != e.booleanValue);
+                                break;
+                            }
+                            default: {
+                                printf("Not supported for boolean\n");
+                                break;
+                            }
+                        }
+                    } else if(e.type == TYPE_DOUBLE) {
+                        double value;
+                        str2doubleStatus status = str2double(&value, chkType.input);
+                        if(status == STR2DOUBLE_SUCCESS) {
+                            switch (chkType.operator) {
+                                case EQUALS: {
+                                    res = (e.doubleValue == value);
+                                    break;
+                                }
+                                case NOT_EQUALS: {
+                                    res = (e.doubleValue != value);
+                                    break;
+                                }
+                                case GREATER: {
+                                    res = (e.doubleValue > value);
+                                    break;
+                                }
+                                case LESS: {
+                                    res = (e.doubleValue < value);
+                                    break;
+                                }
+                                case EQ_GREATER: {
+                                    res = (e.doubleValue >= value);
+                                    break;
+                                }
+                                case EQ_LESS: {
+                                    res = (e.doubleValue <= value);
+                                    break;
+                                }
+                                default: {
+                                    printf("Not supported for double\n");
+                                    break;
+                                }
+                            }
+                        } else {
+                            printf("str2double failed\n");
+                        }
+                    } else if(e.type == TYPE_TEXT) {
+                        switch (chkType.operator) {
+                            case EQUALS: {
+                                res = (strcmp(chkType.input, e.textValue.data) == 0);
+                                break;
+                            }
+                            case NOT_EQUALS: {
+                                res = (strcmp(chkType.input, e.textValue.data) != 0);
+                                break;
+                            }
+                            case CONTAINS: {
+                                res = (strstr(e.textValue.data, chkType.input) != NULL);
+                                break;
+                            }
+                            default: {
+                                printf("Not supported for text\n");
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            destroyElIterator(&iterator);
+            if(currentPredicate->isInverted)
+                res = !res;
+
+            if(currentPredicate->logOp == NONE)
+                generalRes = res;
+            else if(currentPredicate->logOp == AND)
+                generalRes = generalRes && res;
+            else if(currentPredicate->logOp == OR)
+                generalRes = generalRes || res;
+        }
+        currentPredicate = currentPredicate->nextPredicate;
+    }
+    return generalRes;
+}
+
+void forEachDocument(zgdbFile* file, void (* consumer)(document, zgdbFile*), document start) {
+    documentIterator iterator = createDocIterator(file, start.header.indexAttached, start.indexParent, 0);
+    uint64_t depth = 0;
+    while (hasNextDoc(&iterator)) {
+        document doc = nextDoc(file, &iterator, &depth);
+        (*consumer) (doc, file);
+    }
+    destroyDocIterator(&iterator);
+}
+
+void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, path p, findIfResult* ifResult) {
+    //find root document (can be changed)
+    documentIterator rootIterator = createDocIterator(file, order, orderParent, 0);
+    uint64_t depth = 0;
+    resultList contextList = createResultList();
+    if (hasNextDoc(&rootIterator)) {
+        nextDoc(file, &rootIterator, &depth);//skip root
+    }
+    if (hasNextDoc(&rootIterator)) {
+        insertResult(&contextList, nextDoc(file, &rootIterator, &depth));
+    } else {
+        return;//root hasn't any children
+    }
+    destroyDocIterator(&rootIterator);
+
+    bool found = false;
+    for (size_t i = 0; i < p.size; ++i) {
+        step s = p.steps[i];
+        if(s.pType == ABSOLUTE_PATH) {
+            resultList tempContextList = createResultList();
+            result* tempRes = contextList.head;
+            while (tempRes != NULL) {
+                documentIterator iterator = createDocIterator(file, tempRes->document.header.indexAttached, tempRes->document.indexParent, depth);
+                document temp;
+                uint64_t prevDepth = depth;
+                uint64_t docNumber = 0;
+                while (hasNextDoc(&iterator) && depth == prevDepth) {//change level checking - compare prev and cur depth
+                    temp = nextDoc(file, &iterator, &depth);
+                    if(s.sType == DOCUMENT_STEP) {
+                        if(strcmp(temp.header.name, s.stepName) == 0) {//TODO needs to apply predicate
+                            bool pred = calculatePredicate(file, &temp, s, docNumber);
+                            if(pred) {
+                                if(temp.header.indexSon != 0) {
+                                    document child;
+                                    child.header = getDocumentHeader(file, temp.header.indexSon);
+                                    child.indexParent = temp.header.indexAttached;
+                                    child.isRoot = false;
+                                    insertResult(&tempContextList, child);
+                                }
+                                if(i == p.size - 1) {
+                                    ifResult->type = DOCUMENT_RESULT;
+                                    insertResult(&ifResult->documentList, temp);
+                                }
+                                found = true;
+                            }
+                            docNumber++;
+                        }
+                    } else if(s.sType == ELEMENT_STEP) {
+                        elementIterator eLiterator = createElIterator(file, &temp);
+                        while(hasNextEl(&eLiterator)) {
+                            element e = nextEl(file, &eLiterator, true).element;
+                            if(strcmp(e.key, s.stepName) == 0) {
+                                if(i == p.size - 1) {//if can be removed because element_step is always last
+                                    ifResult->type = ELEMENT_RESULT;
+                                    insertElResult(&ifResult->elementList, temp, e);
+                                }
+                                found = true;
+                            }
+                        }
+                        destroyElIterator(&eLiterator);
+                    }
+                }
+                if(!found) {
+                    printf("Not found\n");
+                } else {
+                    printf("Found\n");
+                }
+                destroyDocIterator(&iterator);
+                tempRes = tempRes->next;
+            }
+            destroyResultList(&contextList);
+            contextList = tempContextList;
+        } else if(s.pType == RELATIVE_PATH) {
+            resultList tempContextList = createResultList();
+            result* tempRes = contextList.head;
+            while (tempRes != NULL) {
+                documentIterator iterator = createDocIterator(file, tempRes->document.header.indexAttached, tempRes->document.indexParent, depth);
+                document temp;
+                uint64_t docNumber = 0;
+                while (hasNextDoc(&iterator)) {
+                    temp = nextDoc(file, &iterator, &depth);
+                    if(s.sType == DOCUMENT_STEP) {
+                        if(strcmp(temp.header.name, s.stepName) == 0) {//TODO needs to apply predicate
+                            bool pred = calculatePredicate(file, &temp, s, docNumber);
+                            if(pred) {
+                                if(temp.header.indexSon != 0) {
+                                    document child;
+                                    child.header = getDocumentHeader(file, temp.header.indexSon);
+                                    child.indexParent = temp.header.indexAttached;
+                                    child.isRoot = false;
+                                    insertResult(&tempContextList, child);
+                                }
+                                if(i == p.size - 1) {
+                                    ifResult->type = DOCUMENT_RESULT;
+                                    insertResult(&ifResult->documentList, temp);
+                                }
+                                found = true;
+                            }
+                            docNumber++;
+                        }
+                    } else if(s.sType == ELEMENT_STEP) {
+                        elementIterator eLiterator = createElIterator(file, &temp);
+                        while(hasNextEl(&eLiterator)) {
+                            element e = nextEl(file, &eLiterator, true).element;
+                            if(strcmp(e.key, s.stepName) == 0) {
+                                if(i == p.size - 1) {//if can be removed because element_step is always last
+                                    ifResult->type = ELEMENT_RESULT;
+                                    insertElResult(&ifResult->elementList, temp, e);
+                                }
+                                found = true;
+                            }
+                        }
+                        destroyElIterator(&eLiterator);
+                    }
+                }
+                if(!found) {
+                    printf("Not found\n");
+                } else {
+                    printf("Found\n");
+                }
+                destroyDocIterator(&iterator);
+                tempRes = tempRes->next;
+            }
+            destroyResultList(&contextList);
+            contextList = tempContextList;
+            depth = 1;
+        }
+    }
+    destroyResultList(&contextList);
+}
+
+resultList join(zgdbFile* file, document parent) {
+    resultList pList = createResultList();
+
+    document temp;
+    documentHeader tempHeader;
+    uint64_t tempIndex = parent.header.indexSon;
+    while(tempIndex != 0) {
+        tempHeader = getDocumentHeader(file, tempIndex);
+        temp.header = tempHeader;
+        temp.isRoot = isRootDocumentHeader(tempHeader);
+        temp.indexParent = parent.header.indexAttached;
+        tempIndex = tempHeader.indexBrother;
+        insertResult(&pList, temp);
+    }
+
+    return pList;
+}
+
+findIfResult findIfFromRoot(zgdbFile* file, path p) {
+    resultList rList = createResultList();
+    eLresultList eList = createElResultList();
+    findIfResult ifResult = {.type = UNDEFINED_RESULT, .documentList = rList, .elementList = eList};
+    findIf0(file, 0, 0, p, &ifResult);
+    if(ifResult.type == ELEMENT_RESULT) {
+        destroyResultList(&ifResult.documentList);
+    } else if(ifResult.type == DOCUMENT_RESULT) {
+        destroyElResultList(&ifResult.elementList);
+    } else {
+        destroyElResultList(&ifResult.elementList);
+        destroyResultList(&ifResult.documentList);
+    }
+    return ifResult;
+}
+
+findIfResult findIfFromDocument(zgdbFile* file, path p, document document) {
+    resultList rList = createResultList();
+    eLresultList eList = createElResultList();
+    findIfResult ifResult = {.type = UNDEFINED_RESULT, .documentList = rList, .elementList = eList};
+    findIf0(file, document.header.indexAttached, document.indexParent, p, &ifResult);
+    if(ifResult.type == ELEMENT_RESULT) {
+        destroyElResultList(&ifResult.elementList);
+    } else if(ifResult.type == DOCUMENT_RESULT) {
+        destroyResultList(&ifResult.documentList);
+    } else {
+        destroyElResultList(&ifResult.elementList);
+        destroyResultList(&ifResult.documentList);
+    }
+    return ifResult;
+}
+
+void createRootDocument(zgdbFile* file, off_t offset) {
+    fseeko(file->file, offset, SEEK_SET);
+    documentId id = generateId(offset);
+    documentHeader header = {.id = id, .size = sizeof(documentHeader), .capacity = sizeof(documentHeader),
+            .attrCount = 0, .indexAttached = 0, .indexBrother = 0,
+            .indexSon = 0, .name = "root", .firstToastIndex = 0, .blockType = DOCUMENT};
+
+    fwrite(&header, sizeof(documentHeader), 1, file->file);
+    file->zgdbHeader.fileSize += sizeof(documentHeader);
+    file->zgdbHeader.nodes++;
+    saveHeader(file);
 }
 
 uint64_t createNewToast(zgdbFile* file, uint64_t size) {

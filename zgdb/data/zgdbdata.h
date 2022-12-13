@@ -169,6 +169,8 @@ element* readElement(zgdbFile* file, document doc);
 
 documentHeader getDocumentHeader(zgdbFile* file, uint64_t order);
 
+document getRootDocument(zgdbFile* file);
+
 bool isRootDocumentHeader(documentHeader header);
 
 #endif

@@ -196,6 +196,14 @@ documentHeader getDocumentHeader(zgdbFile* file, uint64_t order) {
     return header;
 }
 
+document getRootDocument(zgdbFile* file) {
+    document rootDoc;
+    rootDoc.header = getDocumentHeader(file, 0);
+    rootDoc.isRoot = true;
+    rootDoc.indexParent = 0;
+    return rootDoc;
+}
+
 bool isRootDocumentHeader(documentHeader header) {
     return strcmp(header.name, "root") == 0 && header.indexAttached == 0 && header.attrCount == 0 &&
            header.indexBrother == 0;

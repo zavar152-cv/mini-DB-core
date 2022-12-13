@@ -21,7 +21,7 @@ document nextDoc(zgdbFile* file, documentIterator* iterator, uint64_t* depth) {
     document toReturn;
     iterator->header = getDocumentHeader(file, iterator->next.order);
     *depth = iterator->next.depth;
-#ifndef DEBUG_OUTPUT
+#ifdef DEBUG_OUTPUT
     printf("Visited document: %s, ", iterator->header.name);
     printf("parent: %llu (index: %llu), ", iterator->next.orderParent, iterator->next.order);
     printf("depth: %llu\n", *depth);

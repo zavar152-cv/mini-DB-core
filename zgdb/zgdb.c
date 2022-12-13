@@ -120,6 +120,11 @@ void expandIndexes(zgdbFile* file) {
 }
 
 createStatus createDocument(zgdbFile* file, const char* name, documentSchema* schema, document parent) {
+//    PROCESS_MEMORY_COUNTERS_EX pmc;
+//    SIZE_T physMemUsedByMe;
+//    GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
+//    physMemUsedByMe = pmc.WorkingSetSize;
+
     documentHeader parentHeader = getDocumentHeader(file, parent.header.indexAttached);
     off_t docSize = sizeof(documentHeader);
     if(schema->capacity != schema->size) {
@@ -193,6 +198,8 @@ createStatus createDocument(zgdbFile* file, const char* name, documentSchema* sc
     parentHeader.indexSon = pRelevantIndexMeta->indexOrder;
     fseeko(file->file, getIndex(file, parent.header.indexAttached).offset, SEEK_SET);
     fwrite(&parentHeader, sizeof(documentHeader), 1, file->file);
+//    printf("%llu, ", pmc.WorkingSetSize);
+
     free(pRelevantIndexMeta);
     return CREATE_OK;
 }
@@ -542,11 +549,13 @@ void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, path p, findI
                         destroyElIterator(&eLiterator);
                     }
                 }
+#ifdef DEBUG_OUTPUT
                 if(!found) {
                     printf("Not found\n");
                 } else {
                     printf("Found\n");
                 }
+#endif
                 destroyDocIterator(&iterator);
                 tempRes = tempRes->next;
             }
@@ -595,11 +604,13 @@ void findIf0(zgdbFile* file, uint64_t order, uint64_t orderParent, path p, findI
                         destroyElIterator(&eLiterator);
                     }
                 }
+#ifdef DEBUG_OUTPUT
                 if(!found) {
                     printf("Not found\n");
                 } else {
                     printf("Found\n");
                 }
+#endif
                 destroyDocIterator(&iterator);
                 tempRes = tempRes->next;
             }

@@ -41,7 +41,7 @@ int main() {
     rootDoc.isRoot = true;
     rootDoc.indexParent = 0;
 
-    if(pFile->zgdbHeader.nodes == 1) {
+    //if(pFile->zgdbHeader.nodes == 1) {
         documentSchema schema2 = initSchema(3);
         addBooleanToSchema(&schema2, "bool1", 1);
         addDoubleToSchema(&schema2, "double6", 1.5);
@@ -58,7 +58,7 @@ int main() {
         }
         printf("%llu, %llu, %ld\n", pFile->zgdbHeader.nodes, pFile->zgdbHeader.fileSize, diff);
         destroySchema(&schema2);
-    }
+    //}
 
 
     finish(pFile);

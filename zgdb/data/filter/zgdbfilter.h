@@ -82,6 +82,7 @@ typedef struct step {
 typedef struct path {
    step* steps;
    size_t size;
+   size_t capacity;
 } path;
 
 /*
@@ -92,5 +93,11 @@ typedef enum resultType {
     DOCUMENT_RESULT,
     ELEMENT_RESULT
 } resultType;
+
+path createPath(size_t n);
+
+void addStep(path* p, step newStep);
+
+void destroyPath(path* p);
 
 #endif

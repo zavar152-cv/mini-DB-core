@@ -31,11 +31,11 @@ int main() {
     printf("Version: %d\n", pFile->zgdbHeader.version);
     printf("Size: %ld\n\n", pFile->zgdbHeader.fileSize);
 
-    for (int i = 0; i < pFile->zgdbHeader.indexCount; ++i) {
-        printf("Index %d\n", i);
-        printf("Flag: %d\n", getIndex(pFile, i).flag);
-        printf("Offset: %ld\n\n", getIndex(pFile, i).offset);
-    }
+//    for (int i = 0; i < pFile->zgdbHeader.indexCount; ++i) {
+//        printf("Index %d\n", i);
+//        printf("Flag: %d\n", getIndex(pFile, i).flag);
+//        printf("Offset: %ld\n\n", getIndex(pFile, i).offset);
+//    }
     document rootDoc;
     rootDoc.header = getDocumentHeader(pFile, 0);
     rootDoc.isRoot = true;
@@ -50,9 +50,22 @@ int main() {
         createDocument(pFile, "test1", &schema2, rootDoc);
         createDocument(pFile, "test3", &schema2, rootDoc);
 
-        path p;
-        p.size = 1;
-        p.steps = (step*) malloc(p.size * sizeof(step));
+//        path p;
+//        p.size = 1;
+//        p.steps = (step*) malloc(p.size * sizeof(step));
+//        step s;
+//        strcpy(s.stepName, "test1");
+//        s.pType = ABSOLUTE_PATH;
+//        s.sType = DOCUMENT_STEP;
+//        s.pred = (predicate*) malloc(sizeof(predicate));
+//        s.pred->isInverted = false;
+//        s.pred->type = BY_ELEMENT_VALUE;
+//        s.pred->logOp = NONE;
+//        s.pred->nextPredicate = NULL;
+//        checkType byValue = {.input = "-1", .operator = EQUALS, .key = "int9"};
+//        s.pred->byValue = byValue;
+//        p.steps[0] = s;
+        path p = createPath(1);
         step s;
         strcpy(s.stepName, "test1");
         s.pType = ABSOLUTE_PATH;
@@ -64,9 +77,9 @@ int main() {
         s.pred->nextPredicate = NULL;
         checkType byValue = {.input = "-1", .operator = EQUALS, .key = "int9"};
         s.pred->byValue = byValue;
-        p.steps[0] = s;
+        addStep(&p, s);
         findIfResult ifResult = findIfFromRoot(pFile, p);
-
+        destroyPath(&p);
         resultList list = ifResult.documentList;
 
         createDocument(pFile, "test5", &schema2, list.head->document);
@@ -74,8 +87,8 @@ int main() {
         addBooleanToSchema(&schema3, "bool1", 1);
         addDoubleToSchema(&schema3, "double6", 4.5);
         addIntToSchema(&schema3, "int9", -1);
-        destroySchema(&schema3);
         createDocument(pFile, "test1", &schema3, list.head->document);
+        destroySchema(&schema3);
         createDocument(pFile, "test5", &schema2, list.head->document);
         destroyResultList(&list);
         path p1;

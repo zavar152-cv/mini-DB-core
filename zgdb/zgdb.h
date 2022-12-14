@@ -63,8 +63,6 @@ void printDocumentElements(zgdbFile* file, document document);
 
 findIfResult findIfFromRoot(zgdbFile* file, path p);
 
-findIfResult findIfFromDocument(zgdbFile* file, path p, document document);
-
 resultList join(zgdbFile* file, document parent);
 
 #endif

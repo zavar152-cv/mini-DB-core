@@ -7,7 +7,7 @@ void createTest() {
     zgdbFile* pFile = init("/tmp/createTest.zgdb");
 #endif
 #ifdef __MINGW32__
-    zgdbFile* pFile = init("D:/createTest.zgdb");
+    zgdbFile* pFile = init("C:/createTest.zgdb");
 #endif
     if(pFile == NULL) {
         printf("Invalid format");
@@ -29,7 +29,7 @@ void createTest() {
 
     long diff;
     long prevDiff = 0;
-    FILE* pIobuf = fopen("D:/createTest.csv", "a");
+    FILE* pIobuf = fopen("C:/createTest.csv", "a");
     for (size_t i = 0; i < 100000; ++i) {
         struct timespec tv0;
         clock_gettime(CLOCK_REALTIME, &tv0);
@@ -54,7 +54,7 @@ void findIfTest() {
     zgdbFile* pFile = init("/tmp/findIfTest.zgdb");
 #endif
 #ifdef __MINGW32__
-    zgdbFile* pFile = init("D:/findIfTest.zgdb");
+    zgdbFile* pFile = init("C:/findIfTest.zgdb");
 #endif
     if(pFile == NULL) {
         printf("Invalid format");
@@ -76,7 +76,7 @@ void findIfTest() {
 
     long diff;
     long prevDiff = 0;
-    FILE* pIobuf = fopen("D:/findIfTest.csv", "a");
+    FILE* pIobuf = fopen("C:/findIfTest.csv", "a");
     for (size_t i = 0; i < 5000; ++i) {
         char numstr[21]; // enough to hold all numbers up to 64-bits
         sprintf(numstr, "%zu", i);
@@ -113,7 +113,7 @@ void deleteTest() {
     zgdbFile* pFile = init("/tmp/deleteTest.zgdb");
 #endif
 #ifdef __MINGW32__
-    zgdbFile* pFile = init("D:/deleteTest.zgdb");
+    zgdbFile* pFile = init("C:/deleteTest.zgdb");
 #endif
     if(pFile == NULL) {
         printf("Invalid format");
@@ -134,7 +134,7 @@ void deleteTest() {
 
     long diff;
     long prevDiff = 0;
-    FILE* pIobuf = fopen("D:/deleteTest.csv", "a");
+    FILE* pIobuf = fopen("C:/deleteTest.csv", "a");
     size_t k = 0;
     for (size_t i = 0; i < 1000; ++i) {
         createDocument(pFile, "testNode", &schema2, rootDoc);
@@ -185,7 +185,7 @@ void updateTest() {
     zgdbFile* pFile = init("/tmp/updateTest.zgdb");
 #endif
 #ifdef __MINGW32__
-    zgdbFile* pFile = init("D:/updateTest.zgdb");
+    zgdbFile* pFile = init("C:/updateTest.zgdb");
 #endif
     if(pFile == NULL) {
         printf("Invalid format");
@@ -207,7 +207,7 @@ void updateTest() {
 
     long diff;
     long prevDiff = 0;
-    FILE* pIobuf = fopen("D:/updateTest.csv", "a");
+    FILE* pIobuf = fopen("C:/updateTest.csv", "a");
     for (size_t i = 0; i < 5000; ++i) {
         char numstr[21]; // enough to hold all numbers up to 64-bits
         sprintf(numstr, "%zu", i);

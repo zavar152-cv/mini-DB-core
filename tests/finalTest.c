@@ -2,12 +2,12 @@
 #include "zgdb.h"
 
 
-void createTest() {
+void createTest(const char* fPath, const char* tPath) {
 #ifdef __linux__
     zgdbFile* pFile = init("/tmp/createTest.zgdb");
 #endif
 #ifdef __MINGW32__
-    zgdbFile* pFile = init("C:/createTest.zgdb");
+    zgdbFile* pFile = init(fPath);
 #endif
     if(pFile == NULL) {
         printf("Invalid format");
@@ -29,7 +29,7 @@ void createTest() {
 
     long diff;
     long prevDiff = 0;
-    FILE* pIobuf = fopen("C:/createTest.csv", "a");
+    FILE* pIobuf = fopen(tPath, "a");
     for (size_t i = 0; i < 100000; ++i) {
         struct timespec tv0;
         clock_gettime(CLOCK_REALTIME, &tv0);
@@ -49,12 +49,12 @@ void createTest() {
     finish(pFile);
 }
 
-void findIfTest() {
+void findIfTest(const char* fPath, const char* tPath) {
 #ifdef __linux__
     zgdbFile* pFile = init("/tmp/findIfTest.zgdb");
 #endif
 #ifdef __MINGW32__
-    zgdbFile* pFile = init("C:/findIfTest.zgdb");
+    zgdbFile* pFile = init(fPath);
 #endif
     if(pFile == NULL) {
         printf("Invalid format");
@@ -76,7 +76,7 @@ void findIfTest() {
 
     long diff;
     long prevDiff = 0;
-    FILE* pIobuf = fopen("C:/findIfTest.csv", "a");
+    FILE* pIobuf = fopen(tPath, "a");
     for (size_t i = 0; i < 5000; ++i) {
         char numstr[21]; // enough to hold all numbers up to 64-bits
         sprintf(numstr, "%zu", i);
@@ -108,12 +108,12 @@ void findIfTest() {
     finish(pFile);
 }
 
-void deleteTest() {
+void deleteTest(const char* fPath, const char* tPath) {
 #ifdef __linux__
     zgdbFile* pFile = init("/tmp/deleteTest.zgdb");
 #endif
 #ifdef __MINGW32__
-    zgdbFile* pFile = init("C:/deleteTest.zgdb");
+    zgdbFile* pFile = init(fPath);
 #endif
     if(pFile == NULL) {
         printf("Invalid format");
@@ -134,7 +134,7 @@ void deleteTest() {
 
     long diff;
     long prevDiff = 0;
-    FILE* pIobuf = fopen("C:/deleteTest.csv", "a");
+    FILE* pIobuf = fopen(tPath, "a");
     size_t k = 0;
     for (size_t i = 0; i < 1000; ++i) {
         createDocument(pFile, "testNode", &schema2, rootDoc);
@@ -180,12 +180,12 @@ void deleteTest() {
     finish(pFile);
 }
 
-void updateTest() {
+void updateTest(const char* fPath, const char* tPath) {
 #ifdef __linux__
     zgdbFile* pFile = init("/tmp/updateTest.zgdb");
 #endif
 #ifdef __MINGW32__
-    zgdbFile* pFile = init("C:/updateTest.zgdb");
+    zgdbFile* pFile = init(fPath);
 #endif
     if(pFile == NULL) {
         printf("Invalid format");
@@ -207,7 +207,7 @@ void updateTest() {
 
     long diff;
     long prevDiff = 0;
-    FILE* pIobuf = fopen("C:/updateTest.csv", "a");
+    FILE* pIobuf = fopen(tPath, "a");
     for (size_t i = 0; i < 5000; ++i) {
         char numstr[21]; // enough to hold all numbers up to 64-bits
         sprintf(numstr, "%zu", i);
@@ -245,13 +245,13 @@ void updateTest() {
 
 int main() {
     printf("Launching creation and file size test...\n");
-    createTest();
+    createTest("D:/createTest.zgdb", "D:/createTest.csv");
     printf("Launching findIf test...\n");
-    findIfTest();
+    findIfTest("D:/findIfTest.zgdb", "D:/findIfTest.csv");
     printf("Launching delete test...\n");
-    deleteTest();
+    deleteTest("D:/deleteTest.zgdb", "D:/deleteTest.csv");
     printf("Launching update test...\n");
-    updateTest();
+    updateTest("D:/updateTest.zgdb", "D:/updateTest.csv");
     return 0;
 }
 

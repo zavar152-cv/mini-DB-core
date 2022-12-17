@@ -108,7 +108,7 @@ elementEntry nextEl(zgdbFile* file, elementIterator* iterator, bool reqData) {
                     int chunks = divRes.quot;
                     if(divRes.rem != 0)
                         chunks++;
-                    printf("Chunks: %d\n", chunks);
+                    //printf("Chunks: %d\n", chunks);
                     zgdbIndex indexToast = getIndex(file, iterator->doc->header.firstToastIndex);
                     toast tempToast;
                     fseeko(file->file, indexToast.offset, SEEK_SET);

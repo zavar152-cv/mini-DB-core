@@ -37,30 +37,33 @@ void printDocumentElements(zgdbFile* file, document document) {
     zgdbIndex index = getIndex(file, document.header.indexAttached);
     fseeko(file->file, index.offset, SEEK_SET);
     fseeko(file->file, sizeof(documentHeader), SEEK_CUR);
+    elementIterator iterator = createElIterator(file, &document);
     for (int i = 0; i < document.header.attrCount; ++i) {
-        element* pElement = readElement(file, document);
-        printf("EName: %s\n", pElement->key);
-        printf("EType: %hhu\n", pElement->type);
-        printf("EValue: ");
-        switch (pElement->type) {
-            case TYPE_BOOLEAN:
-                printf("%hhu\n", pElement->booleanValue);
-                break;
-            case TYPE_INT:
-                printf("%d\n", pElement->integerValue);
-                break;
-            case TYPE_DOUBLE:
-                printf("%f\n", pElement->doubleValue);
-                break;
-            case TYPE_TEXT: {
-                printf("%s\n", pElement->textValue.data);
-                free(pElement->textValue.data);
-                break;
+        if(hasNextEl(&iterator)) {
+            element pElement = nextEl(file, &iterator, true).element;
+            printf("EName: %s\n", pElement.key);
+            printf("EType: %hhu\n", pElement.type);
+            printf("EValue: ");
+            switch (pElement.type) {
+                case TYPE_BOOLEAN:
+                    printf("%s\n", pElement.booleanValue == 1 ? "true" : "false");
+                    break;
+                case TYPE_INT:
+                    printf("%d\n", pElement.integerValue);
+                    break;
+                case TYPE_DOUBLE:
+                    printf("%f\n", pElement.doubleValue);
+                    break;
+                case TYPE_TEXT: {
+                    printf("%s\n", pElement.textValue.data);
+                    free(pElement.textValue.data);
+                    break;
+                }
             }
+            printf("\n");
         }
-        free(pElement);
-        printf("\n");
     }
+    destroyElIterator(&iterator);
 }
 
 void expandIndexes(zgdbFile* file) {
@@ -282,6 +285,22 @@ void deleteDocument(zgdbFile* file, document doc) {
     }
 }
 
+str2intStatus str2long(int64_t *out, char *s) {
+    char *end;
+    if (s[0] == '\0' || isspace(s[0]))
+        return STR2INT_INCONVERTIBLE;
+    errno = 0;
+    int64_t l = strtol(s, &end, 10);
+    if (l > INT32_MAX || errno == ERANGE)
+        return STR2INT_OVERFLOW;
+    if (l < INT32_MIN || errno == ERANGE)
+        return STR2INT_UNDERFLOW;
+    if (*end != '\0')
+        return STR2INT_INCONVERTIBLE;
+    *out = l;
+    return STR2INT_SUCCESS;
+}
+
 str2intStatus str2int(int32_t *out, char *s) {
     char *end;
     if (s[0] == '\0' || isspace(s[0]))
@@ -344,124 +363,154 @@ bool calculatePredicate(zgdbFile* file, document* temp, step s, uint64_t docNumb
             bool res = false;
             checkType chkType = currentPredicate->byValue;
 
-            elementIterator iterator = createElIterator(file, temp);
-            while(hasNextEl(&iterator)) {
-                element e = nextEl(file, &iterator, true).element;
-                if(strcmp(chkType.key, e.key) == 0) {
-                    if(e.type == TYPE_INT) {
-                        int32_t value;
-                        str2intStatus status = str2int(&value, chkType.input);
-                        if(status == STR2INT_SUCCESS) {
+            if(strcmp(chkType.key, "id") == 0) {
+//                char ts[sizeof(uint32_t)];
+//                char off[sizeof(off_t)];
+
+                uint32_t ts = temp->header.id.timestamp;
+                size_t countTs = 0;
+                do {
+                    ts /= 10;
+                    ++countTs;
+                } while (ts != 0);
+
+                off_t off = temp->header.id.offset;
+                size_t countOff = 0;
+                do {
+                    off /= 10;
+                    ++countOff;
+                } while (off != 0);
+
+                char tsC[countTs + 1];
+                char offC[countOff + 1];
+
+                snprintf(tsC, countTs + 1, "%u", temp->header.id.timestamp);
+                snprintf(offC, countOff + 1, "%lld", temp->header.id.offset);
+
+                char *result = malloc(strlen(tsC) + strlen(offC));
+                strcpy(result, offC);
+                strcat(result, tsC);
+                res = (strcmp(result, chkType.input) == 0);
+            } else {
+                elementIterator iterator = createElIterator(file, temp);
+                while(hasNextEl(&iterator)) {
+                    element e = nextEl(file, &iterator, true).element;
+                    if(strcmp(chkType.key, e.key) == 0) {
+                        if(e.type == TYPE_INT) {
+                            int32_t value;
+                            str2intStatus status = str2int(&value, chkType.input);
+                            if(status == STR2INT_SUCCESS) {
+                                switch (chkType.operator) {
+                                    case EQUALS: {
+                                        res = (e.integerValue == value);
+                                        break;
+                                    }
+                                    case NOT_EQUALS: {
+                                        res = (e.integerValue != value);
+                                        break;
+                                    }
+                                    case GREATER: {
+                                        res = (e.integerValue > value);
+                                        break;
+                                    }
+                                    case LESS: {
+                                        res = (e.integerValue < value);
+                                        break;
+                                    }
+                                    case EQ_GREATER: {
+                                        res = (e.integerValue >= value);
+                                        break;
+                                    }
+                                    case EQ_LESS: {
+                                        res = (e.integerValue <= value);
+                                        break;
+                                    }
+                                    default: {
+                                        printf("Not supported for int\n");
+                                        break;
+                                    }
+                                }
+                            } else {
+                                printf("str2int failed\n");
+                            }
+                        } else if(e.type == TYPE_BOOLEAN) {
+                            uint8_t value;
+                            str2boolean(&value, chkType.input);
                             switch (chkType.operator) {
                                 case EQUALS: {
-                                    res = (e.integerValue == value);
+                                    res = (value == e.booleanValue);
                                     break;
                                 }
                                 case NOT_EQUALS: {
-                                    res = (e.integerValue != value);
-                                    break;
-                                }
-                                case GREATER: {
-                                    res = (e.integerValue > value);
-                                    break;
-                                }
-                                case LESS: {
-                                    res = (e.integerValue < value);
-                                    break;
-                                }
-                                case EQ_GREATER: {
-                                    res = (e.integerValue >= value);
-                                    break;
-                                }
-                                case EQ_LESS: {
-                                    res = (e.integerValue <= value);
+                                    res = (value != e.booleanValue);
                                     break;
                                 }
                                 default: {
-                                    printf("Not supported for int\n");
+                                    printf("Not supported for boolean\n");
                                     break;
                                 }
                             }
-                        } else {
-                            printf("str2int failed\n");
-                        }
-                    } else if(e.type == TYPE_BOOLEAN) {
-                        uint8_t value;
-                        str2boolean(&value, chkType.input);
-                        switch (chkType.operator) {
-                            case EQUALS: {
-                                res = (value == e.booleanValue);
-                                break;
+                        } else if(e.type == TYPE_DOUBLE) {
+                            double value;
+                            str2doubleStatus status = str2double(&value, chkType.input);
+                            if(status == STR2DOUBLE_SUCCESS) {
+                                switch (chkType.operator) {
+                                    case EQUALS: {
+                                        res = (e.doubleValue == value);
+                                        break;
+                                    }
+                                    case NOT_EQUALS: {
+                                        res = (e.doubleValue != value);
+                                        break;
+                                    }
+                                    case GREATER: {
+                                        res = (e.doubleValue > value);
+                                        break;
+                                    }
+                                    case LESS: {
+                                        res = (e.doubleValue < value);
+                                        break;
+                                    }
+                                    case EQ_GREATER: {
+                                        res = (e.doubleValue >= value);
+                                        break;
+                                    }
+                                    case EQ_LESS: {
+                                        res = (e.doubleValue <= value);
+                                        break;
+                                    }
+                                    default: {
+                                        printf("Not supported for double\n");
+                                        break;
+                                    }
+                                }
+                            } else {
+                                printf("str2double failed\n");
                             }
-                            case NOT_EQUALS: {
-                                res = (value != e.booleanValue);
-                                break;
-                            }
-                            default: {
-                                printf("Not supported for boolean\n");
-                                break;
-                            }
-                        }
-                    } else if(e.type == TYPE_DOUBLE) {
-                        double value;
-                        str2doubleStatus status = str2double(&value, chkType.input);
-                        if(status == STR2DOUBLE_SUCCESS) {
+                        } else if(e.type == TYPE_TEXT) {
                             switch (chkType.operator) {
                                 case EQUALS: {
-                                    res = (e.doubleValue == value);
+                                    res = (strcmp(chkType.input, e.textValue.data) == 0);
                                     break;
                                 }
                                 case NOT_EQUALS: {
-                                    res = (e.doubleValue != value);
+                                    res = (strcmp(chkType.input, e.textValue.data) != 0);
                                     break;
                                 }
-                                case GREATER: {
-                                    res = (e.doubleValue > value);
-                                    break;
-                                }
-                                case LESS: {
-                                    res = (e.doubleValue < value);
-                                    break;
-                                }
-                                case EQ_GREATER: {
-                                    res = (e.doubleValue >= value);
-                                    break;
-                                }
-                                case EQ_LESS: {
-                                    res = (e.doubleValue <= value);
+                                case CONTAINS: {
+                                    res = (strstr(e.textValue.data, chkType.input) != NULL);
                                     break;
                                 }
                                 default: {
-                                    printf("Not supported for double\n");
+                                    printf("Not supported for text\n");
                                     break;
                                 }
-                            }
-                        } else {
-                            printf("str2double failed\n");
-                        }
-                    } else if(e.type == TYPE_TEXT) {
-                        switch (chkType.operator) {
-                            case EQUALS: {
-                                res = (strcmp(chkType.input, e.textValue.data) == 0);
-                                break;
-                            }
-                            case NOT_EQUALS: {
-                                res = (strcmp(chkType.input, e.textValue.data) != 0);
-                                break;
-                            }
-                            case CONTAINS: {
-                                res = (strstr(e.textValue.data, chkType.input) != NULL);
-                                break;
-                            }
-                            default: {
-                                printf("Not supported for text\n");
-                                break;
                             }
                         }
                     }
                 }
+                destroyElIterator(&iterator);
             }
-            destroyElIterator(&iterator);
             if(currentPredicate->isInverted)
                 res = !res;
 

@@ -22,6 +22,9 @@ void destroySchema(documentSchema* schema) {
 }
 
 addStatus addIntToSchema(documentSchema* schema, char* key, int32_t initValue) {
+    if(strcmp("id", key) == 0)
+        return NAME_EXISTS;
+
     for (int i = 0; i < schema->size; ++i) {
         if(strcmp(schema->elements[i].key, key) == 0)
             return NAME_EXISTS;
@@ -37,6 +40,9 @@ addStatus addIntToSchema(documentSchema* schema, char* key, int32_t initValue) {
 }
 
 addStatus addDoubleToSchema(documentSchema* schema, char* key, double initValue) {
+    if(strcmp("id", key) == 0)
+        return NAME_EXISTS;
+
     for (int i = 0; i < schema->size; ++i) {
         if(strcmp(schema->elements[i].key, key) == 0)
             return NAME_EXISTS;
@@ -52,6 +58,9 @@ addStatus addDoubleToSchema(documentSchema* schema, char* key, double initValue)
 }
 
 addStatus addBooleanToSchema(documentSchema* schema, char* key, uint8_t initValue) {
+    if(strcmp("id", key) == 0)
+        return NAME_EXISTS;
+
     for (int i = 0; i < schema->size; ++i) {
         if(strcmp(schema->elements[i].key, key) == 0)
             return NAME_EXISTS;
@@ -67,6 +76,9 @@ addStatus addBooleanToSchema(documentSchema* schema, char* key, uint8_t initValu
 }
 
 addStatus addTextToSchema(documentSchema* schema, char* key, char* initValue) {
+    if(strcmp("id", key) == 0)
+        return NAME_EXISTS;
+
     for (int i = 0; i < schema->size; ++i) {
         if(strcmp(schema->elements[i].key, key) == 0)
             return NAME_EXISTS;

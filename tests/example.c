@@ -1,19 +1,7 @@
-#define DEBUG_OUTPUT
 #include "zgdb.h"
 
-bool checkName(document d) {
-    return strcmp(d.header.name, "test2") == 0;
-}
-
-bool checkName2(document d) {
-    return strcmp(d.header.name, "test3") == 0;
-}
-
-bool checkName3(document d) {
-    return strcmp(d.header.name, "test5") == 0;
-}
-
 int main() {
+    //open database
 #ifdef __linux__
     zgdbFile* pFile = init("/tmp/test.zgdb");
 #endif
@@ -24,50 +12,36 @@ int main() {
         printf("Invalid format");
         return -1;
     }
-    printf("Before:\n");
     printf("Type: %d\n", pFile->zgdbHeader.zgdbType);
     printf("Nodes: %lu\n", pFile->zgdbHeader.nodes);
     printf("Index count: %lu\n", pFile->zgdbHeader.indexCount);
     printf("Version: %d\n", pFile->zgdbHeader.version);
     printf("Size: %ld\n\n", pFile->zgdbHeader.fileSize);
 
-//    for (int i = 0; i < pFile->zgdbHeader.indexCount; ++i) {
-//        printf("Index %d\n", i);
-//        printf("Flag: %d\n", getIndex(pFile, i).flag);
-//        printf("Offset: %ld\n\n", getIndex(pFile, i).offset);
-//    }
+    //get root document
     document rootDoc;
     rootDoc.header = getDocumentHeader(pFile, 0);
     rootDoc.isRoot = true;
     rootDoc.indexParent = 0;
 
+    //if we don't have any documents then we should create them
     if(pFile->zgdbHeader.nodes == 1) {
-        documentSchema schema2 = initSchema(3);
+        //build schema
+        documentSchema schema2 = initSchema(4);
         addBooleanToSchema(&schema2, "bool1", 1);
         addDoubleToSchema(&schema2, "double6", 1.5);
         addIntToSchema(&schema2, "int9", -1);
+        addTextToSchema(&schema2, "text1", "Hello world!");
+
+        //create 3 docs with schema2 and attach them to root one
         createDocument(pFile, "test1", &schema2, rootDoc);
         createDocument(pFile, "test1", &schema2, rootDoc);
         createDocument(pFile, "test3", &schema2, rootDoc);
 
-//        path p;
-//        p.size = 1;
-//        p.steps = (step*) malloc(p.size * sizeof(step));
-//        step s;
-//        strcpy(s.stepName, "test1");
-//        s.pType = ABSOLUTE_PATH;
-//        s.sType = DOCUMENT_STEP;
-//        s.pred = (predicate*) malloc(sizeof(predicate));
-//        s.pred->isInverted = false;
-//        s.pred->type = BY_ELEMENT_VALUE;
-//        s.pred->logOp = NONE;
-//        s.pred->nextPredicate = NULL;
-//        checkType byValue = {.input = "-1", .operator = EQUALS, .key = "int9"};
-//        s.pred->byValue = byValue;
-//        p.steps[0] = s;
+        //create request path
         path p = createPath(1);
         step s;
-        strcpy(s.stepName, "test1");
+        strcpy(s.stepName, "test1");//find doc with this name
         s.pType = ABSOLUTE_PATH;
         s.sType = DOCUMENT_STEP;
         s.pred = (predicate*) malloc(sizeof(predicate));
@@ -75,13 +49,14 @@ int main() {
         s.pred->type = BY_ELEMENT_VALUE;
         s.pred->logOp = NONE;
         s.pred->nextPredicate = NULL;
-        checkType byValue = {.input = "-1", .operator = EQUALS, .key = "int9"};
+        checkType byValue = {.input = "-1", .operator = EQUALS, .key = "int9"};//find doc with this element
         s.pred->byValue = byValue;
-        addStep(&p, s);
-        findIfResult ifResult = findIfFromRoot(pFile, p);
+        addStep(&p, s);//adding new step to path
+        findIfResult ifResult = findIfFromRoot(pFile, p);//find
         destroyPath(&p);
-        resultList list = ifResult.documentList;
+        resultList list = ifResult.documentList;//get result
 
+        //add another doc and attach it to first document from response
         createDocument(pFile, "test5", &schema2, list.head->document);
         documentSchema schema3 = initSchema(3);
         addBooleanToSchema(&schema3, "bool1", 1);
@@ -91,6 +66,7 @@ int main() {
         destroySchema(&schema3);
         createDocument(pFile, "test5", &schema2, list.head->document);
         destroyResultList(&list);
+        //create request with 2 steps
         path p1;
         p1.size = 2;
         p1.steps = (step*) malloc(p1.size * sizeof(step));
@@ -111,8 +87,6 @@ int main() {
         eLresultList elist = ifResult.elementList;
         destroyElResultList(&elist);
 
-
-
         destroySchema(&schema2);
     }
 
@@ -126,7 +100,7 @@ int main() {
     s0.pred->type = BY_ELEMENT_VALUE;
     s0.pred->logOp = NONE;
     s0.pred->nextPredicate = NULL;
-    checkType byValue1 = {.input = "4502471671294391", .operator = EQUALS, .key = "id"};
+    checkType byValue1 = {.input = "4502471671294391", .operator = EQUALS, .key = "id"};//check by id
     s0.pred->byValue = byValue1;
     addStep(&p0, s0);
     findIfResult ifResult1 = findIfFromRoot(pFile, p0);
@@ -134,6 +108,7 @@ int main() {
     resultList list1 = ifResult1.documentList;
     destroyResultList(&list1);
 
+    //relative step in path
     path p;
     p.size = 1;
     p.steps = (step*) malloc(p.size * sizeof(step));
@@ -162,9 +137,32 @@ int main() {
 
     resultList list = ifResult.documentList;
 
+    documentSchema schema3 = initSchema(3);
+    addBooleanToSchema(&schema3, "bool4", 1);
+    addDoubleToSchema(&schema3, "double1", 4.5);
+    addIntToSchema(&schema3, "int6", -1);
+    createDocument(pFile, "test54", &schema3, list.head->document);
+    destroySchema(&schema3);
+
+    path p3 = createPath(1);
+    step s3;
+    strcpy(s3.stepName, "test54");
+    s3.pType = ABSOLUTE_PATH;
+    s3.sType = DOCUMENT_STEP;
+    s3.pred = NULL;
+    addStep(&p3, s3);
+    findIfResult ifResult3 = findIfFromRoot(pFile, p3);
+    resultList list3 = ifResult3.documentList;
+
+    //update element
+    printf("Before:\n");
+    printDocumentElements(pFile, list3.head->document);
+    updateElement(pFile, list3.head->document, "int6", "45");
+    printf("After:\n");
+    printDocumentElements(pFile, list3.head->document);
     destroyResultList(&list);
 
-
+    //get element as result
     path p1;
     p1.size = 1;
     p1.steps = (step*) malloc(p1.size * sizeof(step));

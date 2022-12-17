@@ -1,17 +1,22 @@
 //Если что - Zavar30, Zavar, Abuzov Yaroslav - это все я (нужно будет обновить имя в ide)
 Реализация модуля для работы с файлом, который хранит данные, образующие дерево. Сборка будет осуществляться с помощью cmake.
 
-Сборка:
+**Сборка:**
 
-Windows (проверено на Win10 22H2 19045.2251):
+**Windows (проверено на Win10 22H2 19045.2251):**
+
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_MAKE_PROGRAM=путь до ninja.exe -G Ninja -S .\ZGDBProject -B .\ZGDBProject\cmake-build-release
 
-Linux (проверено на Ubuntu 18.04.6 LTS (GNU/Linux 5.4.0-135-generic x86_64))
+**Linux (проверено на Ubuntu 18.04.6 LTS (GNU/Linux 5.4.0-135-generic x86_64)):**
+
 cmake -DCMAKE_BUILD_TYPE=Release -G "CodeBlocks - Unix Makefiles" -S .\ZGDBProject -B .\ZGDBProject\cmake-build-release
 
-Версия CMake 3.24.1
+_Версия CMake 3.24.1_
 
-Запуск через терминал, вызвав нужный файл (ZGDBProject)
+_Запуск через терминал, вызвав нужный файл (ZGDBProject)_
+
+example.c - примеры работы с некоторыми функциями (полное описание в отчёте)
+finalTest.c - бенчмарк для замеров производительности
 
 Что уже сделано:
 1) Архитектура системы (см. idea.pdf)
